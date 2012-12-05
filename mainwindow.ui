@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>840</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>eitViewer</string>
+  </property>
+  <widget class="QWidget" name="centralWidget"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuSolver">
+    <property name="title">
+     <string>Solver</string>
+    </property>
+    <addaction name="actionLoad_Voltage"/>
+    <addaction name="actionSave_Voltage"/>
+    <addaction name="separator"/>
+    <addaction name="actionStart_Solver"/>
+    <addaction name="actionStop_Solver"/>
+    <addaction name="separator"/>
+    <addaction name="actionCalibrate"/>
+   </widget>
+   <widget class="QMenu" name="menuImage">
+    <property name="title">
+     <string>Image</string>
+    </property>
+    <addaction name="actionSave_Image"/>
+    <addaction name="separator"/>
+    <addaction name="actionShow_Transparent_Values"/>
+    <addaction name="actionShow_Negative_Values"/>
+    <addaction name="actionShow_Positive_Values"/>
+   </widget>
+   <addaction name="menuSolver"/>
+   <addaction name="menuImage"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionLoad_Voltage">
+   <property name="text">
+    <string>Load Voltage</string>
+   </property>
+  </action>
+  <action name="actionSave_Voltage">
+   <property name="text">
+    <string>Save Voltage</string>
+   </property>
+  </action>
+  <action name="actionStart_Solver">
+   <property name="text">
+    <string>Start Solver</string>
+   </property>
+  </action>
+  <action name="actionStop_Solver">
+   <property name="text">
+    <string>Stop Solver</string>
+   </property>
+  </action>
+  <action name="actionCalibrate">
+   <property name="text">
+    <string>Calibrate</string>
+   </property>
+  </action>
+  <action name="actionSave_Image">
+   <property name="text">
+    <string>Save Image</string>
+   </property>
+  </action>
+  <action name="actionShow_Transparent_Values">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Transparent Values</string>
+   </property>
+  </action>
+  <action name="actionShow_Negative_Values">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Negative Values</string>
+   </property>
+  </action>
+  <action name="actionShow_Positive_Values">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Positive Values</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>
