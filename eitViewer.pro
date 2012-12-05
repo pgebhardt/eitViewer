@@ -19,5 +19,24 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-QMAKE_CXXFLAGS += -std=c++11 -I/usr/local/cuda/include
-QMAKE_LDFLAGS += -lc++ -lfasteit -L/usr/local/cuda/lib64 -lcudart -lcublas
+QMAKE_CXXFLAGS += -std=c++11
+
+unix:!symbian: LIBS += -L$$PWD/../../../../../../usr/local/lib/ -lfasteit
+
+INCLUDEPATH += $$PWD/../../../../../../usr/local/include
+DEPENDPATH += $$PWD/../../../../../../usr/local/include
+
+unix:!symbian: LIBS += -L$$PWD/../../../../../../usr/local/cuda/lib64/ -lcudart
+
+INCLUDEPATH += $$PWD/../../../../../../usr/local/cuda/include
+DEPENDPATH += $$PWD/../../../../../../usr/local/cuda/include
+
+unix:!symbian: LIBS += -L$$PWD/../../../../../../usr/local/cuda/lib64/ -lcublas
+
+INCLUDEPATH += $$PWD/../../../../../../usr/local/cuda/include
+DEPENDPATH += $$PWD/../../../../../../usr/local/cuda/include
+
+OTHER_FILES += \
+    nodes.txt \
+    elements.txt \
+    boundary.txt
