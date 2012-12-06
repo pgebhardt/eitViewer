@@ -12,10 +12,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    image.cpp
+    image.cpp \
+    solver.cpp
 
 HEADERS  += mainwindow.h \
-    image.h
+    image.h \
+    solver.h
 
 FORMS    += mainwindow.ui
 

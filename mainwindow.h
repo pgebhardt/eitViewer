@@ -15,6 +15,13 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     
+private slots:
+    void draw();
+    void on_actionLoad_Voltage_triggered();
+
+protected:
+    void createSolver();
+
 private:
     Ui::MainWindow *ui;
 };
