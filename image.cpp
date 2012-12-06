@@ -48,10 +48,13 @@ Image::~Image() {
     delete this->colors_;
 }
 
-void Image::draw(const fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent) {
+void Image::draw(fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent) {
     // reset min and max
     this->min_value() = 0.0;
     this->max_value() = 0.0;
+
+    // copy to host
+    values.copyToHost(NULL);
 
     // calc min and max
     for (fastEIT::dtype::index element = 0; element < values.rows(); ++element) {

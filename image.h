@@ -19,7 +19,7 @@ signals:
 public slots:
 
 public:
-    void draw(const fastEIT::Matrix<fastEIT::dtype::real>& values,
+    void draw(fastEIT::Matrix<fastEIT::dtype::real>& values,
               bool transparent);
 
 protected:

@@ -1,6 +1,8 @@
 #include <fasteit/fasteit.h>
+#include <iostream>
 
 #include <QtCore>
+#include <QtGui>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "image.h"
@@ -33,16 +35,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     // create timer
-    QTimer* draw_timer = new QTimer(this);
-    connect(draw_timer, SIGNAL(timeout()), this, SLOT(draw()));
+    this->draw_timer_ = new QTimer(this);
+    connect(this->draw_timer_, SIGNAL(timeout()), this, SLOT(draw()));
 
     // create cublas handle
     cublasCreate(&this->handle_);
 
     // create solver
     this->createSolver();
-
-    draw_timer->start(40);
 }
 
 MainWindow::~MainWindow() {
@@ -84,15 +84,41 @@ void MainWindow::createSolver() {
     delete measurment_pattern;
 }
 
-void MainWindow::on_actionLoad_Voltage_triggered() {
-
-}
-
 void MainWindow::draw() {
     // solve
-    auto gamma = this->solver().solve(this->handle(), NULL);
-    gamma.copyToHost(NULL);
+    fastEIT::Matrix<fastEIT::dtype::real>& gamma = this->solver().solve(this->handle(), NULL);
 
     // update image
     static_cast<Image*>(this->centralWidget())->draw(gamma, true);
+}
+
+void MainWindow::on_actionLoad_Voltage_triggered() {
+    // get load file name
+    std::string file_name = QFileDialog::getOpenFileName(this, "Load Voltage",
+                                                        "", "Matrix File (*.txt)").toStdString();
+
+    if (file_name != "") {
+        // load matrix
+        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name, NULL);
+
+        // copy voltage
+        this->solver().measured_voltage().copy(*voltage, NULL);
+
+        delete voltage;
+    }
+}
+
+void MainWindow::on_actionStart_Solver_triggered() {
+    // start timer
+    this->draw_timer().start(40);
+}
+
+void MainWindow::on_actionStop_Solver_triggered() {
+    // stop timer
+    this->draw_timer().stop();
+}
+
+void MainWindow::on_actionCalibrate_triggered() {
+    // set calibration voltage to current measurment voltage
+    this->solver().calibration_voltage().copy(this->solver().measured_voltage(), NULL);
 }
