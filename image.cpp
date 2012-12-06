@@ -1,10 +1,26 @@
 #include <algorithm>
+#include <cmath>
 #include "image.h"
+
+void jet(const fastEIT::Matrix<fastEIT::dtype::real>& values, fastEIT::dtype::real norm,
+         std::vector<fastEIT::dtype::real>* red, std::vector<fastEIT::dtype::real>* green,
+         std::vector<fastEIT::dtype::real>* blue) {
+    // calc colors
+    for (fastEIT::dtype::index element = 0; element < values.rows(); ++element) {
+        (*red)[element] = std::min(std::max(-2.0 * std::abs(values(element, 0) / norm - 0.5) + 1.5,
+                                            0.0), 1.0);
+        (*green)[element] = std::min(std::max(-2.0 * std::abs(values(element, 0) / norm - 0.0) + 1.5,
+                                            0.0), 1.0);
+        (*blue)[element] = std::min(std::max(-2.0 * std::abs(values(element, 0) / norm + 0.5) + 1.5,
+                                             0.0), 1.0);
+    }
+}
 
 Image::Image(const fastEIT::Mesh<fastEIT::basis::Linear>& mesh,
              const fastEIT::Electrodes& electrodes,
              QWidget *parent) :
-    QGLWidget(parent), mesh_(mesh), electrodes_(electrodes), min_value_(0.0), max_value_(0.0) {
+    QGLWidget(parent), mesh_(mesh), electrodes_(electrodes), red_(mesh.elements().rows()),
+    green_(mesh.elements().rows()), blue_(mesh.elements().rows()), min_value_(0.0), max_value_(0.0) {
     // create buffer
     this->vertices_ = new GLfloat[mesh.elements().rows() * mesh.elements().columns() * 2];
     this->colors_ = new GLfloat[mesh.elements().rows() * mesh.elements().columns() * 4];
@@ -42,10 +58,42 @@ void Image::draw(const fastEIT::Matrix<fastEIT::dtype::real> &values, bool trans
         this->max_value() = std::max(values(element, 0), this->max_value());
     }
 
-    // change color
-    this->colors_[0] = this->colors_[1] = this->colors_[2] = 0.0;
-    this->colors_[4] = this->colors_[5] = this->colors_[6] = 0.0;
-    this->colors_[8] = this->colors_[9] = this->colors_[10] = 0.0;
+    // calc colors
+    jet(values, std::max(std::max(-this->min_value(), this->max_value()), 0.1f),
+        &this->red(), &this->green(), &this->blue());
+
+    // set colors
+    for (fastEIT::dtype::index element = 0; element < this->mesh().elements().rows(); ++element) {
+        // set red
+        this->colors_[element * this->mesh().elements().columns() * 4 +
+                0 * 4 + 0] =
+            this->colors_[element * this->mesh().elements().columns() * 4 +
+                    1 * 4 + 0] =
+            this->colors_[element * this->mesh().elements().columns() * 4 +
+                    2 * 4 + 0] =
+                this->red()[element];
+
+        // set green
+        this->colors_[element * this->mesh().elements().columns() * 4 +
+                0 * 4 + 1] =
+            this->colors_[element * this->mesh().elements().columns() * 4 +
+                    1 * 4 + 1] =
+            this->colors_[element * this->mesh().elements().columns() * 4 +
+                    2 * 4 + 1] =
+                this->green()[element];
+
+        // set blue
+        this->colors_[element * this->mesh().elements().columns() * 4 +
+                0 * 4 + 2] =
+            this->colors_[element * this->mesh().elements().columns() * 4 +
+                    1 * 4 + 2] =
+            this->colors_[element * this->mesh().elements().columns() * 4 +
+                    2 * 4 + 2] =
+                this->blue()[element];
+    }
+
+    // redraw
+    this->updateGL();
 }
 
 void Image::initializeGL() {

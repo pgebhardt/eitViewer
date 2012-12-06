@@ -22,15 +22,10 @@ MainWindow::MainWindow(QWidget *parent) :
     Image* image = new Image(*mesh, *electrodes);
     this->setCentralWidget(image);
 
-    // test
-    auto gamma = fastEIT::matrix::loadtxt<fastEIT::dtype::real>("gamma.txt", NULL);
-    image->draw(*gamma, false);
-
     // cleanup
     delete nodes;
     delete elements;
     delete boundary;
-    delete gamma;
 }
 
 MainWindow::~MainWindow()

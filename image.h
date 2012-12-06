@@ -41,16 +41,31 @@ public:
     const fastEIT::dtype::real& max_value() const {
         return this->max_value_;
     }
+    const std::vector<fastEIT::dtype::real>& red() const {
+        return this->red_;
+    }
+    const std::vector<fastEIT::dtype::real>& green() const {
+        return this->green_;
+    }
+    const std::vector<fastEIT::dtype::real>& blue() const {
+        return this->blue_;
+    }
 
     // mutators
     fastEIT::dtype::real& min_value() { return this->min_value_; }
     fastEIT::dtype::real& max_value() { return this->max_value_; }
+    std::vector<fastEIT::dtype::real>& red() { return this->red_; }
+    std::vector<fastEIT::dtype::real>& green() { return this->green_; }
+    std::vector<fastEIT::dtype::real>& blue() { return this->blue_; }
 
 private:
     const fastEIT::Mesh<fastEIT::basis::Linear>& mesh_;
     const fastEIT::Electrodes& electrodes_;
     GLfloat* vertices_;
     GLfloat* colors_;
+    std::vector<fastEIT::dtype::real> red_;
+    std::vector<fastEIT::dtype::real> green_;
+    std::vector<fastEIT::dtype::real> blue_;
     fastEIT::dtype::real min_value_;
     fastEIT::dtype::real max_value_;
 };
