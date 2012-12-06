@@ -107,7 +107,12 @@ void MainWindow::createStatusBar() {
 
 void MainWindow::draw() {
     // solve
+    this->time().restart();
     fastEIT::Matrix<fastEIT::dtype::real>& gamma = this->solver().solve(this->handle(), NULL);
+    cudaStreamSynchronize(NULL);
+
+    // calc fps
+    this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
 
     // get image
     Image* image = static_cast<Image*>(this->centralWidget());
