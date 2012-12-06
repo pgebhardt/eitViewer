@@ -47,6 +47,9 @@ MainWindow::MainWindow(QWidget *parent) :
     // create image
     this->setCentralWidget(new Image(this->solver().forward_solver().model().mesh(),
                                      this->solver().forward_solver().model().electrodes()));
+
+    // create status bar
+    this->createStatusBar();
 }
 
 MainWindow::~MainWindow() {
@@ -85,12 +88,36 @@ void MainWindow::createSolver() {
     delete measurment_pattern;
 }
 
+void MainWindow::createStatusBar() {
+    // create label
+    this->fps_label_ = new QLabel("fps:", this);
+    this->min_label_ = new QLabel("min:", this);
+    this->max_label_ = new QLabel("max:", this);
+
+    // set frame style
+    this->fps_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
+    this->min_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
+    this->max_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
+
+    // fill status bar
+    this->statusBar()->addPermanentWidget(&this->fps_label(), 1);
+    this->statusBar()->addPermanentWidget(&this->min_label(), 1);
+    this->statusBar()->addPermanentWidget(&this->max_label(), 1);
+}
+
 void MainWindow::draw() {
     // solve
     fastEIT::Matrix<fastEIT::dtype::real>& gamma = this->solver().solve(this->handle(), NULL);
 
+    // get image
+    Image* image = static_cast<Image*>(this->centralWidget());
+
     // update image
-    static_cast<Image*>(this->centralWidget())->draw(gamma, true);
+    image->draw(gamma, true);
+
+    // update min max label
+    this->min_label().setText(QString("min: %1 dB").arg(image->min_value()));
+    this->max_label().setText(QString("max: %1 dB").arg(image->max_value()));
 }
 
 void MainWindow::on_actionLoad_Voltage_triggered() {
