@@ -43,6 +43,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create solver
     this->createSolver();
+
+    // create image
+    this->setCentralWidget(new Image(this->solver().forward_solver().model().mesh(),
+                                     this->solver().forward_solver().model().electrodes()));
 }
 
 MainWindow::~MainWindow() {
@@ -60,9 +64,6 @@ void MainWindow::createSolver() {
     // create mesh and electrodes
     auto mesh = new fastEIT::Mesh<fastEIT::basis::Linear>(*nodes, *elements, *boundary, 0.045, 0.1, NULL);
     auto electrodes = new fastEIT::Electrodes(36, 0.003, 0.003, 0.045);
-
-    // create image
-    this->setCentralWidget(new Image(*mesh, *electrodes));
 
     // create pattern
     auto drive_pattern = createPattern(36, 35, 2, NULL);
