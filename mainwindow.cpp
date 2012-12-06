@@ -35,14 +35,20 @@ MainWindow::MainWindow(QWidget *parent) :
     // create timer
     QTimer* draw_timer = new QTimer(this);
     connect(draw_timer, SIGNAL(timeout()), this, SLOT(draw()));
-    draw_timer->start(40);
+
+    // create cublas handle
+    cublasCreate(&this->handle_);
 
     // create solver
     this->createSolver();
+
+    draw_timer->start(40);
 }
 
 MainWindow::~MainWindow() {
     delete ui;
+    delete this->solver_;
+    cublasDestroy(this->handle_);
 }
 
 void MainWindow::createSolver() {
@@ -52,7 +58,7 @@ void MainWindow::createSolver() {
     auto boundary = fastEIT::matrix::loadtxt<fastEIT::dtype::index>("boundary.txt", NULL);
 
     // create mesh and electrodes
-    auto mesh = new fastEIT::Mesh<fastEIT::basis::Linear>(*nodes, *elements, *boundary, 0.045, 0.01, NULL);
+    auto mesh = new fastEIT::Mesh<fastEIT::basis::Linear>(*nodes, *elements, *boundary, 0.045, 0.1, NULL);
     auto electrodes = new fastEIT::Electrodes(36, 0.003, 0.003, 0.045);
 
     // create image
@@ -61,6 +67,14 @@ void MainWindow::createSolver() {
     // create pattern
     auto drive_pattern = createPattern(36, 35, 2, NULL);
     auto measurment_pattern = createPattern(36, 0, 4, NULL);
+
+    // create solver
+    this->solver_ = new fastEIT::Solver<fastEIT::basis::Linear>(
+                mesh, electrodes, *measurment_pattern, *drive_pattern,
+                50e-3, 4, 0.05, this->handle(), NULL);
+
+    // pre solve
+    this->solver().preSolve(this->handle(), NULL);
 
     // cleanup
     delete nodes;
@@ -75,6 +89,10 @@ void MainWindow::on_actionLoad_Voltage_triggered() {
 }
 
 void MainWindow::draw() {
+    // solve
+    auto gamma = this->solver().solve(this->handle(), NULL);
+    gamma.copyToHost(NULL);
+
     // update image
-    static_cast<Image*>(this->centralWidget())->draw(*gamma, true);
+    static_cast<Image*>(this->centralWidget())->draw(gamma, true);
 }

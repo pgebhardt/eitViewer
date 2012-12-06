@@ -50,7 +50,8 @@ Image::~Image() {
 
 void Image::draw(const fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent) {
     // reset min and max
-    std::tie(this->min_value(), this->max_value()) = std::make_tuple(0.0, 0.0);
+    this->min_value() = 0.0;
+    this->max_value() = 0.0;
 
     // calc min and max
     for (fastEIT::dtype::index element = 0; element < values.rows(); ++element) {
