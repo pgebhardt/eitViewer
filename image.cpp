@@ -36,9 +36,9 @@ Image::Image(const fastEIT::Mesh<fastEIT::basis::Linear>& mesh,
 
         for (fastEIT::dtype::index node = 0; node < nodes.size(); ++node) {
             this->vertices_[element * mesh.elements().columns() * 2
-                    + node * 2 + 0] = -std::get<1>(nodes[node]) / mesh.radius();
+                    + node * 2 + 0] = std::get<0>(nodes[node]) / mesh.radius();
             this->vertices_[element * mesh.elements().columns() * 2
-                    + node * 2 + 1] = -std::get<0>(nodes[node]) / mesh.radius();
+                    + node * 2 + 1] = std::get<1>(nodes[node]) / mesh.radius();
         }
     }
 }
@@ -154,10 +154,10 @@ void Image::paintGL() {
     glColor3f(0.0, 0.0, 0.0);
 
     for (fastEIT::dtype::index electrode = 0; electrode < this->electrodes().count(); ++electrode) {
-        glVertex3f(-std::get<1>(this->electrodes().electrodes_start()[electrode]) / this->mesh().radius(),
-                   -std::get<0>(this->electrodes().electrodes_start()[electrode]) / this->mesh().radius(), 0.0);
-        glVertex3f(-std::get<1>(this->electrodes().electrodes_end()[electrode]) / this->mesh().radius(),
-                   -std::get<0>(this->electrodes().electrodes_end()[electrode]) / this->mesh().radius(), 0.0);
+        glVertex3f(std::get<0>(this->electrodes().electrodes_start()[electrode]) / this->mesh().radius(),
+                   std::get<1>(this->electrodes().electrodes_start()[electrode]) / this->mesh().radius(), 0.0);
+        glVertex3f(std::get<0>(this->electrodes().electrodes_end()[electrode]) / this->mesh().radius(),
+                   std::get<1>(this->electrodes().electrodes_end()[electrode]) / this->mesh().radius(), 0.0);
     }
     glEnd();
 
