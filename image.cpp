@@ -62,9 +62,11 @@ void Image::draw(fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent
         this->max_value() = std::max(values(element, 0), this->max_value());
     }
 
+    // calc norm
+    fastEIT::dtype::real norm = std::max(std::max(-this->min_value(), this->max_value()), 0.1f);
+
     // calc colors
-    jet(values, std::max(std::max(-this->min_value(), this->max_value()), 0.1f),
-        &this->red(), &this->green(), &this->blue());
+    jet(values, norm, &this->red(), &this->green(), &this->blue());
 
     // set colors
     for (fastEIT::dtype::index element = 0; element < this->mesh().elements().rows(); ++element) {
@@ -94,6 +96,25 @@ void Image::draw(fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent
             this->colors_[element * this->mesh().elements().columns() * 4 +
                     2 * 4 + 2] =
                 this->blue()[element];
+
+        // calc alpha
+        if (transparent) {
+            this->colors_[element * this->mesh().elements().columns() * 4 +
+                    0 * 4 + 3] =
+                this->colors_[element * this->mesh().elements().columns() * 4 +
+                        1 * 4 + 3] =
+                this->colors_[element * this->mesh().elements().columns() * 4 +
+                        2 * 4 + 3] =
+                    std::abs(values(element, 0) / norm);
+        } else {
+            this->colors_[element * this->mesh().elements().columns() * 4 +
+                    0 * 4 + 3] =
+                this->colors_[element * this->mesh().elements().columns() * 4 +
+                        1 * 4 + 3] =
+                this->colors_[element * this->mesh().elements().columns() * 4 +
+                        2 * 4 + 3] =
+                    1.0;
+        }
     }
 
     // redraw

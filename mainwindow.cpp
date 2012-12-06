@@ -113,7 +113,7 @@ void MainWindow::draw() {
     Image* image = static_cast<Image*>(this->centralWidget());
 
     // update image
-    image->draw(gamma, true);
+    image->draw(gamma, this->ui->actionShow_Transparent_Values->isChecked());
 
     // update min max label
     this->min_label().setText(QString("min: %1 dB").arg(image->min_value()));
