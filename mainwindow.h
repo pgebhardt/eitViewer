@@ -29,6 +29,10 @@ private slots:
 
     void on_actionCalibrate_triggered();
 
+    void on_actionSave_Image_triggered();
+
+    void on_actionSave_Voltage_triggered();
+
 protected:
     void createSolver();
     void createStatusBar();

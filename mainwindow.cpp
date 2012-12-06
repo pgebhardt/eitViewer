@@ -127,17 +127,30 @@ void MainWindow::draw() {
 
 void MainWindow::on_actionLoad_Voltage_triggered() {
     // get load file name
-    std::string file_name = QFileDialog::getOpenFileName(this, "Load Voltage",
-                                                        "", "Matrix File (*.txt)").toStdString();
+    QString file_name = QFileDialog::getOpenFileName(this, "Load Voltage",
+                                                        "", "Matrix File (*.txt)");
 
     if (file_name != "") {
         // load matrix
-        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name, NULL);
+        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), NULL);
 
         // copy voltage
         this->solver().measured_voltage().copy(*voltage, NULL);
 
         delete voltage;
+    }
+}
+
+void MainWindow::on_actionSave_Voltage_triggered() {
+    // get save file name
+    QString file_name = QFileDialog::getSaveFileName(this, "Save Voltage", "",
+                                                     "Matrix File (*.txt)");
+
+    // save voltage
+    if (file_name != "") {
+        this->solver().measured_voltage().copyToHost(NULL);
+        cudaStreamSynchronize(NULL);
+        fastEIT::matrix::savetxt(file_name.toStdString(), this->solver().measured_voltage());
     }
 }
 
@@ -154,4 +167,21 @@ void MainWindow::on_actionStop_Solver_triggered() {
 void MainWindow::on_actionCalibrate_triggered() {
     // set calibration voltage to current measurment voltage
     this->solver().calibration_voltage().copy(this->solver().measured_voltage(), NULL);
+}
+
+void MainWindow::on_actionSave_Image_triggered() {
+    // get image
+    Image* image = static_cast<Image*>(this->centralWidget());
+
+    // grap frame buffer
+    QImage bitmap = image->grabFrameBuffer();
+
+    // get save file name
+    QString file_name = QFileDialog::getSaveFileName(this, "Save Image", "",
+                                                    "PNG File (*.png)");
+
+    // save image
+    if (file_name != "") {
+        bitmap.save(file_name, "PNG");
+    }
 }
