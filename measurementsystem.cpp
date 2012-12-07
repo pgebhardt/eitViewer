@@ -1,12 +1,17 @@
 #include "measurementsystem.h"
 #include <QDataStream>
-#include <iostream>
 
 MeasurementSystem::MeasurementSystem(QObject *parent) :
     QObject(parent), measurement_system_socket_(NULL), electrodes_count_(0), drive_count_(0),
     measurement_count_(0), voltage_(NULL) {
     // create tcp socket
     this->measurement_system_socket_ = new QTcpSocket(this);
+
+    // connect socket to slots
+    connect(&this->measurement_system_socket(), SIGNAL(connected()), this, SLOT(connected()));
+    connect(&this->measurement_system_socket(), SIGNAL(disconnected()), this, SLOT(disconnected()));
+    connect(&this->measurement_system_socket(), SIGNAL(error(QAbstractSocket::SocketError)),
+            this, SLOT(connectionError(QAbstractSocket::SocketError)));
 }
 
 MeasurementSystem::~MeasurementSystem() {
@@ -19,10 +24,6 @@ MeasurementSystem::~MeasurementSystem() {
 void MeasurementSystem::connectToSystem(const QHostAddress& address, int port) {
     // connect to measurement system
     this->measurement_system_socket().connectToHost(address, port);
-
-    // connect socket to slots
-    connect(&this->measurement_system_socket(), SIGNAL(connected()), this, SLOT(connected()));
-    connect(&this->measurement_system_socket(), SIGNAL(disconnected()), this, SLOT(disconnected()));
 }
 
 void MeasurementSystem::connected() {
@@ -34,7 +35,6 @@ void MeasurementSystem::connected() {
     input_stream >> this->electrodes_count();
     input_stream >> this->measurement_count();
     input_stream >> this->drive_count();
-    std::cout << this->electrodes_count() << std::endl;
 
     // create matrix
     this->voltage_ = new fastEIT::Matrix<fastEIT::dtype::real>(this->measurement_count(),
@@ -60,5 +60,17 @@ void MeasurementSystem::readyRead() {
 }
 
 void MeasurementSystem::disconnected() {
-    std::cout << "disconnected!" << std::endl;
+    // cleanup
+    disconnect(&this->measurement_system_socket(), SIGNAL(readyRead()), this, SLOT(readyRead()));
+
+    if (this->voltage_ != NULL) {
+        delete this->voltage_;
+    }
+}
+
+void MeasurementSystem::connectionError(QAbstractSocket::SocketError socket_error) {
+    // emit error
+    if (socket_error != QAbstractSocket::RemoteHostClosedError) {
+        emit this->error(socket_error);
+    }
 }

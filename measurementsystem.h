@@ -16,11 +16,13 @@ public:
     bool isConnected() { return this->measurement_system_socket().state() == QAbstractSocket::ConnectedState; }
 
 signals:
+    void error(QAbstractSocket::SocketError socket_error);
     
 public slots:
     virtual void connected();
     virtual void readyRead();
     virtual void disconnected();
+    virtual void connectionError(QAbstractSocket::SocketError socket_error);
 
 public:
     // accessors

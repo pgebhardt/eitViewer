@@ -22,6 +22,8 @@ public:
     
 private slots:
     void draw();
+    void measurementSystemConnectionError(QAbstractSocket::SocketError socket_error);
+
     void on_actionLoad_Voltage_triggered();
 
     void on_actionStart_Solver_triggered();
@@ -33,6 +35,8 @@ private slots:
     void on_actionSave_Image_triggered();
 
     void on_actionSave_Voltage_triggered();
+
+    void on_actionConnect_triggered();
 
 protected:
     void createSolver();

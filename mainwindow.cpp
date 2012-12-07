@@ -4,6 +4,8 @@
 #include <QtCore>
 #include <QtGui>
 #include <QHostAddress>
+#include <QInputDialog>
+#include <QMessageBox>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "image.h"
@@ -45,7 +47,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create measurement system
     this->measurement_system_ = new MeasurementSystem(this);
-    this->measurement_system().connectToSystem(QHostAddress("127.0.0.1"), 3000);
+    connect(&this->measurement_system(), SIGNAL(error(QAbstractSocket::SocketError)),
+            this, SLOT(measurementSystemConnectionError(QAbstractSocket::SocketError)));
 
     // create solver
     this->createSolver();
@@ -150,6 +153,22 @@ void MainWindow::draw() {
     this->max_label().setText(QString("max: %1 dB").arg(max_value));
 }
 
+void MainWindow::measurementSystemConnectionError(QAbstractSocket::SocketError socket_error) {
+    // check socket error
+    if (socket_error == QAbstractSocket::HostNotFoundError) {
+         QMessageBox::information(this, this->windowTitle(),
+                                  tr("The host was not found. Please check the "
+                                     "host name and port settings."));
+
+    } else if (socket_error == QAbstractSocket::ConnectionRefusedError) {
+         QMessageBox::information(this, this->windowTitle(),
+                                  tr("The connection was refused by the measurement system. "
+                                     "Make sure the system is running, "
+                                     "and check that the host name and port "
+                                     "settings are correct."));
+    }
+}
+
 void MainWindow::on_actionLoad_Voltage_triggered() {
     // get load file name
     QString file_name = QFileDialog::getOpenFileName(this, "Load Voltage",
@@ -208,5 +227,16 @@ void MainWindow::on_actionSave_Image_triggered() {
     // save image
     if (file_name != "") {
         bitmap.save(file_name, "PNG");
+    }
+}
+
+void MainWindow::on_actionConnect_triggered() {
+    // get host address
+    bool ok;
+    QString host_address = QInputDialog::getText(this, "Measurement System Host Address", "Host Address", QLineEdit::Normal, "127.0.0.1", &ok);
+
+    // connect to system
+    if (ok) {
+        this->measurement_system().connectToSystem(QHostAddress(host_address), 3000);
     }
 }

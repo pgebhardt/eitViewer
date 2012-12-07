@@ -45,7 +45,14 @@
     <addaction name="actionShow_Negative_Values"/>
     <addaction name="actionShow_Positive_Values"/>
    </widget>
+   <widget class="QMenu" name="menuMeasurement_System">
+    <property name="title">
+     <string>Measurement System</string>
+    </property>
+    <addaction name="actionConnect"/>
+   </widget>
    <addaction name="menuSolver"/>
+   <addaction name="menuMeasurement_System"/>
    <addaction name="menuImage"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -110,6 +117,11 @@
    </property>
    <property name="text">
     <string>Show Positive Values</string>
+   </property>
+  </action>
+  <action name="actionConnect">
+   <property name="text">
+    <string>Connect</string>
    </property>
   </action>
  </widget>
