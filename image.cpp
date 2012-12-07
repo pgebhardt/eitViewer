@@ -20,7 +20,7 @@ Image::Image(const fastEIT::Mesh<fastEIT::basis::Linear>& mesh,
              const fastEIT::Electrodes& electrodes,
              QWidget *parent) :
     QGLWidget(parent), mesh_(mesh), electrodes_(electrodes), red_(mesh.elements().rows()),
-    green_(mesh.elements().rows()), blue_(mesh.elements().rows()), min_value_(0.0), max_value_(0.0) {
+    green_(mesh.elements().rows()), blue_(mesh.elements().rows()) {
     // create buffer
     this->vertices_ = new GLfloat[mesh.elements().rows() * mesh.elements().columns() * 2];
     this->colors_ = new GLfloat[mesh.elements().rows() * mesh.elements().columns() * 4];
@@ -48,22 +48,23 @@ Image::~Image() {
     delete this->colors_;
 }
 
-void Image::draw(fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent) {
-    // reset min and max
-    this->min_value() = 0.0;
-    this->max_value() = 0.0;
+std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
+    fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent) {
+    // min and max values
+    fastEIT::dtype::real min_value = 0.0;
+    fastEIT::dtype::real max_value = 0.0;
 
     // copy to host
     values.copyToHost(NULL);
 
     // calc min and max
     for (fastEIT::dtype::index element = 0; element < values.rows(); ++element) {
-        this->min_value() = std::min(values(element, 0), this->min_value());
-        this->max_value() = std::max(values(element, 0), this->max_value());
+        min_value = std::min(values(element, 0), min_value);
+        max_value = std::max(values(element, 0), max_value);
     }
 
     // calc norm
-    fastEIT::dtype::real norm = std::max(std::max(-this->min_value(), this->max_value()), 0.1f);
+    fastEIT::dtype::real norm = std::max(std::max(-min_value, max_value), 0.1f);
 
     // calc colors
     jet(values, norm, &this->red(), &this->green(), &this->blue());
@@ -119,6 +120,8 @@ void Image::draw(fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent
 
     // redraw
     this->updateGL();
+
+    return std::make_tuple(min_value, max_value);
 }
 
 void Image::initializeGL() {

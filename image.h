@@ -13,14 +13,14 @@ public:
                    const fastEIT::Electrodes& electrodes,
                    QWidget *parent = 0);
     virtual ~Image();
-    
+
 signals:
-    
+
 public slots:
 
 public:
-    void draw(fastEIT::Matrix<fastEIT::dtype::real>& values,
-              bool transparent);
+    std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> draw(
+        fastEIT::Matrix<fastEIT::dtype::real>& values, bool transparent);
 
 protected:
     virtual void initializeGL();
@@ -35,12 +35,6 @@ public:
     const fastEIT::Electrodes& electrodes() const {
         return this->electrodes_;
     }
-    const fastEIT::dtype::real& min_value() const {
-        return this->min_value_;
-    }
-    const fastEIT::dtype::real& max_value() const {
-        return this->max_value_;
-    }
     const std::vector<fastEIT::dtype::real>& red() const {
         return this->red_;
     }
@@ -52,8 +46,6 @@ public:
     }
 
     // mutators
-    fastEIT::dtype::real& min_value() { return this->min_value_; }
-    fastEIT::dtype::real& max_value() { return this->max_value_; }
     std::vector<fastEIT::dtype::real>& red() { return this->red_; }
     std::vector<fastEIT::dtype::real>& green() { return this->green_; }
     std::vector<fastEIT::dtype::real>& blue() { return this->blue_; }
@@ -66,8 +58,6 @@ private:
     std::vector<fastEIT::dtype::real> red_;
     std::vector<fastEIT::dtype::real> green_;
     std::vector<fastEIT::dtype::real> blue_;
-    fastEIT::dtype::real min_value_;
-    fastEIT::dtype::real max_value_;
 };
 
 #endif // IMAGE_H

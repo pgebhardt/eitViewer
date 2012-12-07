@@ -118,11 +118,13 @@ void MainWindow::draw() {
     Image* image = static_cast<Image*>(this->centralWidget());
 
     // update image
-    image->draw(gamma, this->ui->actionShow_Transparent_Values->isChecked());
+    fastEIT::dtype::real min_value, max_value;
+    std::tie(min_value, max_value) = image->draw(gamma,
+        this->ui->actionShow_Transparent_Values->isChecked());
 
     // update min max label
-    this->min_label().setText(QString("min: %1 dB").arg(image->min_value()));
-    this->max_label().setText(QString("max: %1 dB").arg(image->max_value()));
+    this->min_label().setText(QString("min: %1 dB").arg(min_value));
+    this->max_label().setText(QString("max: %1 dB").arg(max_value));
 }
 
 void MainWindow::on_actionLoad_Voltage_triggered() {
