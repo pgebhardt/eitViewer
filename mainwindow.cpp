@@ -3,9 +3,11 @@
 
 #include <QtCore>
 #include <QtGui>
+#include <QHostAddress>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "image.h"
+#include "measurementsystem.h"
 
 // create pattern
 fastEIT::Matrix<fastEIT::dtype::real>* createPattern(fastEIT::dtype::size electrodes_count,
@@ -41,6 +43,10 @@ MainWindow::MainWindow(QWidget *parent) :
     // create cublas handle
     cublasCreate(&this->handle_);
 
+    // create measurement system
+    this->measurement_system_ = new MeasurementSystem(this);
+    this->measurement_system().connectToSystem(QHostAddress("127.0.0.1"), 3000);
+
     // create solver
     this->createSolver();
 
@@ -48,22 +54,13 @@ MainWindow::MainWindow(QWidget *parent) :
     this->setCentralWidget(new Image(this->solver().forward_solver().model().mesh(),
                                      this->solver().forward_solver().model().electrodes()));
 
-    // create voltage server
-    this->voltage_server_ = new VoltageServer(&this->solver().measured_voltage());
-    this->voltage_server().thread().start();
-
     // create status bar
     this->createStatusBar();
 }
 
 MainWindow::~MainWindow() {
-    // stop voltage server
-    this->voltage_server().thread().quit();
-    this->voltage_server().thread().wait();
-
     delete this->ui;
     delete this->solver_;
-    delete this->voltage_server_;
     cublasDestroy(this->handle_);
 }
 
@@ -79,11 +76,11 @@ void MainWindow::createSolver() {
 
     // create pattern
     auto drive_pattern = createPattern(36, 35, 2, NULL);
-    auto measurment_pattern = createPattern(36, 0, 4, NULL);
+    auto measurement_pattern = createPattern(36, 0, 4, NULL);
 
     // create solver
     this->solver_ = new fastEIT::Solver<fastEIT::basis::Linear>(
-                mesh, electrodes, *measurment_pattern, *drive_pattern,
+                mesh, electrodes, *measurement_pattern, *drive_pattern,
                 50e-3, 4, 0.05, this->handle(), NULL);
 
     // pre solve
@@ -94,7 +91,7 @@ void MainWindow::createSolver() {
     delete elements;
     delete boundary;
     delete drive_pattern;
-    delete measurment_pattern;
+    delete measurement_pattern;
 }
 
 void MainWindow::createStatusBar() {
@@ -117,6 +114,7 @@ void MainWindow::createStatusBar() {
 void MainWindow::draw() {
     // solve
     this->time().restart();
+    this->measurement_system().voltage();
     fastEIT::Matrix<fastEIT::dtype::real>& gamma = this->solver().solve(this->handle(), NULL);
     gamma.copyToHost(NULL);
     cudaStreamSynchronize(NULL);

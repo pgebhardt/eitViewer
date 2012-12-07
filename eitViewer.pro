@@ -13,11 +13,11 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     image.cpp \
-    voltageserver.cpp
+    measurementsystem.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
-    voltageserver.h
+    measurementsystem.h
 
 FORMS    += mainwindow.ui
 
