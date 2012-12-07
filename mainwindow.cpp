@@ -1,5 +1,4 @@
 #include <fasteit/fasteit.h>
-#include <iostream>
 
 #include <QtCore>
 #include <QtGui>
@@ -166,6 +165,10 @@ void MainWindow::measurementSystemConnectionError(QAbstractSocket::SocketError s
                                      "Make sure the system is running, "
                                      "and check that the host name and port "
                                      "settings are correct."));
+    } else if (socket_error == QAbstractSocket::RemoteHostClosedError) {
+         QMessageBox::information(this, this->windowTitle(),
+                                  tr("The measurement system closed the connection. "
+                                     "Make sure the system is still running."));
     }
 }
 
@@ -239,4 +242,9 @@ void MainWindow::on_actionConnect_triggered() {
     if (ok) {
         this->measurement_system().connectToSystem(QHostAddress(host_address), 3000);
     }
+}
+
+void MainWindow::on_actionDisconnect_triggered() {
+   // disconnect from measurement system
+    this->measurement_system().disconnectFromSystem();
 }
