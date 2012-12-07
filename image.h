@@ -20,7 +20,7 @@ public slots:
 
 public:
     std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> draw(
-        fastEIT::Matrix<fastEIT::dtype::real>& values, bool transparent);
+        const fastEIT::Matrix<fastEIT::dtype::real>& values, bool transparent);
 
 protected:
     virtual void initializeGL();

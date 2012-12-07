@@ -6,6 +6,7 @@
 #include <QTime>
 #include <QLabel>
 #include <fasteit/fasteit.h>
+#include "voltageserver.h"
 
 namespace Ui {
 class MainWindow;
@@ -48,6 +49,7 @@ public:
     const QLabel& fps_label() const { return *this->fps_label_; }
     const QLabel& min_label() const { return *this->min_label_; }
     const QLabel& max_label() const { return *this->max_label_; }
+    const VoltageServer& voltage_server() const { return *this->voltage_server_; }
 
     // mutators
     fastEIT::Solver<fastEIT::basis::Linear>& solver() { return *this->solver_; }
@@ -57,6 +59,7 @@ public:
     QLabel& fps_label() { return *this->fps_label_; }
     QLabel& min_label() { return *this->min_label_; }
     QLabel& max_label() { return *this->max_label_; }
+    VoltageServer& voltage_server() { return *this->voltage_server_; }
 
 private:
     Ui::MainWindow *ui;
@@ -67,6 +70,7 @@ private:
     QLabel* fps_label_;
     QLabel* min_label_;
     QLabel* max_label_;
+    VoltageServer* voltage_server_;
 };
 
 #endif // MAINWINDOW_H

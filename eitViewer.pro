@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui opengl
+QT       += core gui opengl network
 
 TARGET = eitViewer
 TEMPLATE = app
@@ -12,10 +12,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    image.cpp
+    image.cpp \
+    voltageserver.cpp
 
 HEADERS  += mainwindow.h \
-    image.h
+    image.h \
+    voltageserver.h
 
 FORMS    += mainwindow.ui
 

@@ -48,13 +48,22 @@ MainWindow::MainWindow(QWidget *parent) :
     this->setCentralWidget(new Image(this->solver().forward_solver().model().mesh(),
                                      this->solver().forward_solver().model().electrodes()));
 
+    // create voltage server
+    this->voltage_server_ = new VoltageServer(&this->solver().measured_voltage());
+    this->voltage_server().thread().start();
+
     // create status bar
     this->createStatusBar();
 }
 
 MainWindow::~MainWindow() {
-    delete ui;
+    // stop voltage server
+    this->voltage_server().thread().quit();
+    this->voltage_server().thread().wait();
+
+    delete this->ui;
     delete this->solver_;
+    delete this->voltage_server_;
     cublasDestroy(this->handle_);
 }
 
@@ -109,10 +118,21 @@ void MainWindow::draw() {
     // solve
     this->time().restart();
     fastEIT::Matrix<fastEIT::dtype::real>& gamma = this->solver().solve(this->handle(), NULL);
+    gamma.copyToHost(NULL);
     cudaStreamSynchronize(NULL);
 
     // calc fps
     this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
+
+    // cut values
+    for (fastEIT::dtype::index element = 0; element < gamma.rows(); ++element) {
+        if ((!this->ui->actionShow_Negative_Values->isChecked()) && (gamma(element, 0) < 0.0)) {
+            gamma(element, 0) = 0.0;
+        }
+        if ((!this->ui->actionShow_Positive_Values->isChecked()) && (gamma(element, 0) > 0.0)) {
+            gamma(element, 0) = 0.0;
+        }
+    }
 
     // get image
     Image* image = static_cast<Image*>(this->centralWidget());

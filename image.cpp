@@ -49,13 +49,10 @@ Image::~Image() {
 }
 
 std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
-    fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent) {
+    const fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent) {
     // min and max values
     fastEIT::dtype::real min_value = 0.0;
     fastEIT::dtype::real max_value = 0.0;
-
-    // copy to host
-    values.copyToHost(NULL);
 
     // calc min and max
     for (fastEIT::dtype::index element = 0; element < values.rows(); ++element) {
@@ -72,8 +69,8 @@ std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
     // set colors
     for (fastEIT::dtype::index element = 0; element < this->mesh().elements().rows(); ++element) {
         // set red
-        this->colors_[element * this->mesh().elements().columns() * 4 +
-                0 * 4 + 0] =
+        this->colors_[element * this->mesh().elements().columns() * 4 +0 * 4 + 0] =
+
             this->colors_[element * this->mesh().elements().columns() * 4 +
                     1 * 4 + 0] =
             this->colors_[element * this->mesh().elements().columns() * 4 +
