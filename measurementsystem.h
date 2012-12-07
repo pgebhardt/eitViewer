@@ -12,6 +12,7 @@ public:
     explicit MeasurementSystem(QObject *parent = 0);
     virtual ~MeasurementSystem();
     void connectToSystem(const QHostAddress& address, int port);
+    void disconnectFromSystem();
 
     bool isConnected() { return this->measurement_system_socket().state() == QAbstractSocket::ConnectedState; }
 

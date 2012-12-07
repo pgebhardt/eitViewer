@@ -26,6 +26,11 @@ void MeasurementSystem::connectToSystem(const QHostAddress& address, int port) {
     this->measurement_system_socket().connectToHost(address, port);
 }
 
+void MeasurementSystem::disconnectFromSystem() {
+    // disconnect
+    this->measurement_system_socket().disconnectFromHost();
+}
+
 void MeasurementSystem::connected() {
     // wait for data
     this->measurement_system_socket().waitForReadyRead(1000);
@@ -65,12 +70,11 @@ void MeasurementSystem::disconnected() {
 
     if (this->voltage_ != NULL) {
         delete this->voltage_;
+        this->voltage_ = NULL;
     }
 }
 
 void MeasurementSystem::connectionError(QAbstractSocket::SocketError socket_error) {
     // emit error
-    if (socket_error != QAbstractSocket::RemoteHostClosedError) {
-        emit this->error(socket_error);
-    }
+    emit this->error(socket_error);
 }
