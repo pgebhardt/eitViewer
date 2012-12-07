@@ -112,9 +112,14 @@ void MainWindow::createStatusBar() {
 }
 
 void MainWindow::draw() {
+    // copy voltage
+    if (this->measurement_system().isConnected()) {
+        this->measurement_system().voltage().copyToDevice(NULL);
+        this->solver().measured_voltage().copy(this->measurement_system().voltage(), NULL);
+    }
+
     // solve
     this->time().restart();
-    this->measurement_system().voltage();
     fastEIT::Matrix<fastEIT::dtype::real>& gamma = this->solver().solve(this->handle(), NULL);
     gamma.copyToHost(NULL);
     cudaStreamSynchronize(NULL);

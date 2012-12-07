@@ -13,6 +13,8 @@ public:
     virtual ~MeasurementSystem();
     void connectToSystem(const QHostAddress& address, int port);
 
+    bool isConnected() { return this->measurement_system_socket().state() == QAbstractSocket::ConnectedState; }
+
 signals:
     
 public slots:
