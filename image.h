@@ -9,10 +9,11 @@ class Image : public QGLWidget
 {
     Q_OBJECT
 public:
-    explicit Image(const fastEIT::Mesh<fastEIT::basis::Linear>& mesh,
-                   const fastEIT::Electrodes& electrodes,
-                   QWidget *parent = 0);
+    explicit Image(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model,
+        QWidget *parent = 0);
     virtual ~Image();
+
+    void init(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model);
 
 signals:
 
@@ -20,7 +21,7 @@ public slots:
 
 public:
     std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> draw(
-        const fastEIT::Matrix<fastEIT::dtype::real>& values, bool transparent);
+        const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool transparent);
 
 protected:
     virtual void initializeGL();
@@ -29,11 +30,8 @@ protected:
 
 public:
     // accessors
-    const fastEIT::Mesh<fastEIT::basis::Linear>& mesh() const {
-        return this->mesh_;
-    }
-    const fastEIT::Electrodes& electrodes() const {
-        return this->electrodes_;
+    const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model() const {
+        return this->model_;
     }
     const std::vector<fastEIT::dtype::real>& red() const {
         return this->red_;
@@ -51,8 +49,7 @@ public:
     std::vector<fastEIT::dtype::real>& blue() { return this->blue_; }
 
 private:
-    const fastEIT::Mesh<fastEIT::basis::Linear>& mesh_;
-    const fastEIT::Electrodes& electrodes_;
+    const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model_;
     GLfloat* vertices_;
     GLfloat* colors_;
     std::vector<fastEIT::dtype::real> red_;

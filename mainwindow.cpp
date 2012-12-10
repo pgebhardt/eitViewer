@@ -11,12 +11,12 @@
 #include "measurementsystem.h"
 
 // create pattern
-fastEIT::Matrix<fastEIT::dtype::real>* createPattern(fastEIT::dtype::size electrodes_count,
+std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> createPattern(fastEIT::dtype::size electrodes_count,
     fastEIT::dtype::index first_element, fastEIT::dtype::index step_width,
         cudaStream_t stream) {
     // create matrix
-    auto pattern = new fastEIT::Matrix<fastEIT::dtype::real>(electrodes_count,
-        electrodes_count / step_width, stream);
+    auto pattern = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
+        electrodes_count, electrodes_count / step_width, stream);
 
     // fill pattern
     for (fastEIT::dtype::index i = 0; i < pattern->columns(); ++i) {
@@ -53,8 +53,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->createSolver();
 
     // create image
-    this->setCentralWidget(new Image(this->solver().forward_solver().model().mesh(),
-                                     this->solver().forward_solver().model().electrodes()));
+    this->setCentralWidget(new Image(this->solver()->model()));
 
     // create status bar
     this->createStatusBar();
@@ -62,38 +61,36 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow() {
     delete this->ui;
-    delete this->solver_;
     cublasDestroy(this->handle_);
 }
 
 void MainWindow::createSolver() {
-    // load mesh
-    auto nodes = fastEIT::matrix::loadtxt<fastEIT::dtype::real>("nodes.txt", NULL);
-    auto elements = fastEIT::matrix::loadtxt<fastEIT::dtype::index>("elements.txt", NULL);
-    auto boundary = fastEIT::matrix::loadtxt<fastEIT::dtype::index>("boundary.txt", NULL);
+    // cuda stream
+    cudaStream_t stream = NULL;
 
-    // create mesh and electrodes
-    auto mesh = new fastEIT::Mesh<fastEIT::basis::Linear>(*nodes, *elements, *boundary, 0.045, 0.1, NULL);
-    auto electrodes = new fastEIT::Electrodes(36, 0.003, 0.003, 0.045);
+    // load mesh
+    auto nodes = std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>(
+        fastEIT::matrix::loadtxt<fastEIT::dtype::real>("nodes.txt", stream));
+    auto elements = std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::index>>(
+        fastEIT::matrix::loadtxt<fastEIT::dtype::index>("elements.txt", stream));
+    auto boundary = std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::index>>(
+        fastEIT::matrix::loadtxt<fastEIT::dtype::index>("boundary.txt", stream));
+
+    // create model
+    auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
+        std::make_shared<fastEIT::Mesh<fastEIT::basis::Linear>>(nodes, elements, boundary, 0.045, 0.1),
+        std::make_shared<fastEIT::Electrodes>(36, 0.003, 0.003, 0.045), 50e-3, 4, this->handle(), stream);
 
     // create pattern
-    auto drive_pattern = createPattern(36, 35, 2, NULL);
-    auto measurement_pattern = createPattern(36, 0, 4, NULL);
+    auto drive_pattern = createPattern(36, 35, 2, stream);
+    auto measurement_pattern = createPattern(36, 0, 4, stream);
 
     // create solver
-    this->solver_ = new fastEIT::Solver<fastEIT::basis::Linear>(
-                mesh, electrodes, *measurement_pattern, *drive_pattern,
-                50e-3, 4, 0.05, this->handle(), NULL);
+    this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::basis::Linear>>(
+        model, measurement_pattern, drive_pattern, 0.05, this->handle(), stream);
 
     // pre solve
-    this->solver().preSolve(this->handle(), NULL);
-
-    // cleanup
-    delete nodes;
-    delete elements;
-    delete boundary;
-    delete drive_pattern;
-    delete measurement_pattern;
+    this->solver()->preSolve(this->handle(), stream);
 }
 
 void MainWindow::createStatusBar() {
@@ -117,25 +114,25 @@ void MainWindow::draw() {
     // copy voltage
     if (this->measurement_system().isConnected()) {
         this->measurement_system().voltage().copyToDevice(NULL);
-        this->solver().measured_voltage().copy(this->measurement_system().voltage(), NULL);
+        this->solver()->measured_voltage()->copy(&this->measurement_system().voltage(), NULL);
     }
 
     // solve
     this->time().restart();
-    fastEIT::Matrix<fastEIT::dtype::real>& gamma = this->solver().solve(this->handle(), NULL);
-    gamma.copyToHost(NULL);
+    auto gamma = this->solver()->solve(this->handle(), NULL);
+    gamma->copyToHost(NULL);
     cudaStreamSynchronize(NULL);
 
     // calc fps
     this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
 
     // cut values
-    for (fastEIT::dtype::index element = 0; element < gamma.rows(); ++element) {
-        if ((!this->ui->actionShow_Negative_Values->isChecked()) && (gamma(element, 0) < 0.0)) {
-            gamma(element, 0) = 0.0;
+    for (fastEIT::dtype::index element = 0; element < gamma->rows(); ++element) {
+        if ((!this->ui->actionShow_Negative_Values->isChecked()) && ((*gamma)(element, 0) < 0.0)) {
+            (*gamma)(element, 0) = 0.0;
         }
-        if ((!this->ui->actionShow_Positive_Values->isChecked()) && (gamma(element, 0) > 0.0)) {
-            gamma(element, 0) = 0.0;
+        if ((!this->ui->actionShow_Positive_Values->isChecked()) && ((*gamma)(element, 0) > 0.0)) {
+            (*gamma)(element, 0) = 0.0;
         }
     }
 
@@ -182,7 +179,7 @@ void MainWindow::on_actionLoad_Voltage_triggered() {
         auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), NULL);
 
         // copy voltage
-        this->solver().measured_voltage().copy(*voltage, NULL);
+        this->solver()->measured_voltage()->copy(voltage, NULL);
 
         delete voltage;
     }
@@ -195,9 +192,9 @@ void MainWindow::on_actionSave_Voltage_triggered() {
 
     // save voltage
     if (file_name != "") {
-        this->solver().measured_voltage().copyToHost(NULL);
+        this->solver()->measured_voltage()->copyToHost(NULL);
         cudaStreamSynchronize(NULL);
-        fastEIT::matrix::savetxt(file_name.toStdString(), this->solver().measured_voltage());
+        fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage().get());
     }
 }
 
@@ -213,7 +210,7 @@ void MainWindow::on_actionStop_Solver_triggered() {
 
 void MainWindow::on_actionCalibrate_triggered() {
     // set calibration voltage to current measurment voltage
-    this->solver().calibration_voltage().copy(this->solver().measured_voltage(), NULL);
+    this->solver()->calibration_voltage()->copy(this->solver()->measured_voltage().get(), NULL);
 }
 
 void MainWindow::on_actionSave_Image_triggered() {

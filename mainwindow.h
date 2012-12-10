@@ -46,8 +46,8 @@ protected:
 
 public:
     // accessor
-    const fastEIT::Solver<fastEIT::basis::Linear>& solver() const {
-        return *this->solver_;
+    const std::shared_ptr<fastEIT::Solver<fastEIT::basis::Linear>> solver() const {
+        return this->solver_;
     }
     const MeasurementSystem& measurement_system() const { return *this->measurement_system_; }
     const cublasHandle_t& handle() const { return this->handle_; }
@@ -58,7 +58,7 @@ public:
     const QLabel& max_label() const { return *this->max_label_; }
 
     // mutators
-    fastEIT::Solver<fastEIT::basis::Linear>& solver() { return *this->solver_; }
+    std::shared_ptr<fastEIT::Solver<fastEIT::basis::Linear>> solver() { return this->solver_; }
     MeasurementSystem& measurement_system() { return *this->measurement_system_; }
     cublasHandle_t& handle() { return this->handle_; }
     QTimer& draw_timer() { return *this->draw_timer_; }
@@ -70,7 +70,7 @@ public:
 private:
     Ui::MainWindow *ui;
     MeasurementSystem* measurement_system_;
-    fastEIT::Solver<fastEIT::basis::Linear>* solver_;
+    std::shared_ptr<fastEIT::Solver<fastEIT::basis::Linear>> solver_;
     cublasHandle_t handle_;
     QTimer* draw_timer_;
     QTime time_;

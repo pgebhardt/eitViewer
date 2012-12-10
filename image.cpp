@@ -2,43 +2,42 @@
 #include <cmath>
 #include "image.h"
 
-void jet(const fastEIT::Matrix<fastEIT::dtype::real>& values, fastEIT::dtype::real norm,
+void jet(const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, fastEIT::dtype::real norm,
          std::vector<fastEIT::dtype::real>* red, std::vector<fastEIT::dtype::real>* green,
          std::vector<fastEIT::dtype::real>* blue) {
     // calc colors
-    for (fastEIT::dtype::index element = 0; element < values.rows(); ++element) {
-        (*red)[element] = std::min(std::max(-2.0 * std::abs(values(element, 0) / norm - 0.5) + 1.5,
+    for (fastEIT::dtype::index element = 0; element < values->rows(); ++element) {
+        (*red)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, 0) / norm - 0.5) + 1.5,
                                             0.0), 1.0);
-        (*green)[element] = std::min(std::max(-2.0 * std::abs(values(element, 0) / norm - 0.0) + 1.5,
+        (*green)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, 0) / norm - 0.0) + 1.5,
                                             0.0), 1.0);
-        (*blue)[element] = std::min(std::max(-2.0 * std::abs(values(element, 0) / norm + 0.5) + 1.5,
+        (*blue)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, 0) / norm + 0.5) + 1.5,
                                              0.0), 1.0);
     }
 }
 
-Image::Image(const fastEIT::Mesh<fastEIT::basis::Linear>& mesh,
-             const fastEIT::Electrodes& electrodes,
+Image::Image(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model,
              QWidget *parent) :
-    QGLWidget(parent), mesh_(mesh), electrodes_(electrodes), red_(mesh.elements().rows()),
-    green_(mesh.elements().rows()), blue_(mesh.elements().rows()) {
+    QGLWidget(parent), model_(model), red_(model->mesh()->elements()->rows()),
+    green_(model->mesh()->elements()->rows()), blue_(model->mesh()->elements()->rows()) {
     // create buffer
-    this->vertices_ = new GLfloat[mesh.elements().rows() * mesh.elements().columns() * 2];
-    this->colors_ = new GLfloat[mesh.elements().rows() * mesh.elements().columns() * 4];
+    this->vertices_ = new GLfloat[model->mesh()->elements()->rows() * model->mesh()->elements()->columns() * 2];
+    this->colors_ = new GLfloat[model->mesh()->elements()->rows() * model->mesh()->elements()->columns() * 4];
 
     // init buffer
-    std::fill_n(this->vertices_, mesh.elements().rows() * mesh.elements().columns() * 2, 0.0);
-    std::fill_n(this->colors_, mesh.elements().rows() * mesh.elements().columns() * 4, 1.0);
+    std::fill_n(this->vertices_, model->mesh()->elements()->rows() * model->mesh()->elements()->columns() * 2, 0.0);
+    std::fill_n(this->colors_, model->mesh()->elements()->rows() * model->mesh()->elements()->columns() * 4, 1.0);
 
     // fill vertex buffer
-    for (fastEIT::dtype::index element = 0; element < mesh.elements().rows(); ++element) {
+    for (fastEIT::dtype::index element = 0; element < model->mesh()->elements()->rows(); ++element) {
         // get element nodes
-        auto nodes = mesh.elementNodes(element);
+        auto nodes = model->mesh()->elementNodes(element);
 
         for (fastEIT::dtype::index node = 0; node < nodes.size(); ++node) {
-            this->vertices_[element * mesh.elements().columns() * 2
-                    + node * 2 + 0] = std::get<0>(nodes[node]) / mesh.radius();
-            this->vertices_[element * mesh.elements().columns() * 2
-                    + node * 2 + 1] = std::get<1>(nodes[node]) / mesh.radius();
+            this->vertices_[element * model->mesh()->elements()->columns() * 2
+                    + node * 2 + 0] = std::get<0>(nodes[node]) / model->mesh()->radius();
+            this->vertices_[element * model->mesh()->elements()->columns() * 2
+                    + node * 2 + 1] = std::get<1>(nodes[node]) / model->mesh()->radius();
         }
     }
 }
@@ -49,15 +48,15 @@ Image::~Image() {
 }
 
 std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
-    const fastEIT::Matrix<fastEIT::dtype::real> &values, bool transparent) {
+    const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool transparent) {
     // min and max values
     fastEIT::dtype::real min_value = 0.0;
     fastEIT::dtype::real max_value = 0.0;
 
     // calc min and max
-    for (fastEIT::dtype::index element = 0; element < values.rows(); ++element) {
-        min_value = std::min(values(element, 0), min_value);
-        max_value = std::max(values(element, 0), max_value);
+    for (fastEIT::dtype::index element = 0; element < values->rows(); ++element) {
+        min_value = std::min((*values)(element, 0), min_value);
+        max_value = std::max((*values)(element, 0), max_value);
     }
 
     // calc norm
@@ -67,49 +66,49 @@ std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
     jet(values, norm, &this->red(), &this->green(), &this->blue());
 
     // set colors
-    for (fastEIT::dtype::index element = 0; element < this->mesh().elements().rows(); ++element) {
+    for (fastEIT::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
         // set red
-        this->colors_[element * this->mesh().elements().columns() * 4 +0 * 4 + 0] =
+        this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +0 * 4 + 0] =
 
-            this->colors_[element * this->mesh().elements().columns() * 4 +
+            this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                     1 * 4 + 0] =
-            this->colors_[element * this->mesh().elements().columns() * 4 +
+            this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                     2 * 4 + 0] =
                 this->red()[element];
 
         // set green
-        this->colors_[element * this->mesh().elements().columns() * 4 +
+        this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                 0 * 4 + 1] =
-            this->colors_[element * this->mesh().elements().columns() * 4 +
+            this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                     1 * 4 + 1] =
-            this->colors_[element * this->mesh().elements().columns() * 4 +
+            this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                     2 * 4 + 1] =
                 this->green()[element];
 
         // set blue
-        this->colors_[element * this->mesh().elements().columns() * 4 +
+        this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                 0 * 4 + 2] =
-            this->colors_[element * this->mesh().elements().columns() * 4 +
+            this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                     1 * 4 + 2] =
-            this->colors_[element * this->mesh().elements().columns() * 4 +
+            this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                     2 * 4 + 2] =
                 this->blue()[element];
 
         // calc alpha
         if (transparent) {
-            this->colors_[element * this->mesh().elements().columns() * 4 +
+            this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                     0 * 4 + 3] =
-                this->colors_[element * this->mesh().elements().columns() * 4 +
+                this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                         1 * 4 + 3] =
-                this->colors_[element * this->mesh().elements().columns() * 4 +
+                this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                         2 * 4 + 3] =
-                    std::abs(values(element, 0) / norm);
+                    std::abs((*values)(element, 0) / norm);
         } else {
-            this->colors_[element * this->mesh().elements().columns() * 4 +
+            this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                     0 * 4 + 3] =
-                this->colors_[element * this->mesh().elements().columns() * 4 +
+                this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                         1 * 4 + 3] =
-                this->colors_[element * this->mesh().elements().columns() * 4 +
+                this->colors_[element * this->model()->mesh()->elements()->columns() * 4 +
                         2 * 4 + 3] =
                     1.0;
         }
@@ -146,18 +145,18 @@ void Image::paintGL() {
     glColorPointer(4, GL_FLOAT, 0, this->colors_);
 
     // draw elements
-    glDrawArrays(GL_TRIANGLES, 0, this->mesh_.elements().rows() * this->mesh_.elements().columns());
+    glDrawArrays(GL_TRIANGLES, 0, this->model()->mesh()->elements()->rows() * this->model()->mesh()->elements()->columns());
 
     // draw electrodes
     glLineWidth(3.0);
     glBegin(GL_LINES);
     glColor3f(0.0, 0.0, 0.0);
 
-    for (fastEIT::dtype::index electrode = 0; electrode < this->electrodes().count(); ++electrode) {
-        glVertex3f(std::get<0>(this->electrodes().electrodes_start()[electrode]) / this->mesh().radius(),
-                   std::get<1>(this->electrodes().electrodes_start()[electrode]) / this->mesh().radius(), 0.0);
-        glVertex3f(std::get<0>(this->electrodes().electrodes_end()[electrode]) / this->mesh().radius(),
-                   std::get<1>(this->electrodes().electrodes_end()[electrode]) / this->mesh().radius(), 0.0);
+    for (fastEIT::dtype::index electrode = 0; electrode < this->model()->electrodes()->count(); ++electrode) {
+        glVertex3f(std::get<0>(this->model()->electrodes()->electrodes_start()[electrode]) / this->model()->mesh()->radius(),
+                   std::get<1>(this->model()->electrodes()->electrodes_start()[electrode]) / this->model()->mesh()->radius(), 0.0);
+        glVertex3f(std::get<0>(this->model()->electrodes()->electrodes_end()[electrode]) / this->model()->mesh()->radius(),
+                   std::get<1>(this->model()->electrodes()->electrodes_end()[electrode]) / this->model()->mesh()->radius(), 0.0);
     }
     glEnd();
 
