@@ -60,10 +60,16 @@ MainWindow::MainWindow(QWidget *parent) :
     this->createStatusBar();
 
     // create musik maker
+    this->voltage_server_ = new VoltageServer(this->solver()->measured_voltage(), this);
+    this->voltage_server_->thread()->start();
     this->musik_maker_ = std::make_shared<MusikMaker>(this->solver()->model(), this);
 }
 
 MainWindow::~MainWindow() {
+    // stop voltage server
+    this->voltage_server_->thread()->quit();
+    this->voltage_server_->thread()->wait();
+
     delete this->ui;
     cublasDestroy(this->handle_);
 }

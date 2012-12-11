@@ -8,6 +8,7 @@
 #include <fasteit/fasteit.h>
 #include "measurementsystem.h"
 #include "musikmaker.h"
+#include "voltageserver.h"
 
 namespace Ui {
 class MainWindow;
@@ -81,6 +82,8 @@ private:
     QLabel* fps_label_;
     QLabel* min_label_;
     QLabel* max_label_;
+    VoltageServer* voltage_server_;
+
 };
 
 #endif // MAINWINDOW_H

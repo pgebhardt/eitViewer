@@ -14,12 +14,14 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     image.cpp \
     measurementsystem.cpp \
-    musikmaker.cpp
+    musikmaker.cpp \
+    voltageserver.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
     measurementsystem.h \
-    musikmaker.h
+    musikmaker.h \
+    voltageserver.h
 
 FORMS    += mainwindow.ui
 
