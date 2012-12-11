@@ -60,7 +60,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->createStatusBar();
 
     // create musik maker
-    this->voltage_server_ = new VoltageServer(this->solver()->measured_voltage(), this);
+    this->voltage_server_ = new VoltageServer(this->solver()->measured_voltage());
     this->voltage_server_->thread()->start();
     this->musik_maker_ = std::make_shared<MusikMaker>(this->solver()->model(), this);
 }
