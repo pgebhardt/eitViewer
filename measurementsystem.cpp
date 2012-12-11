@@ -15,10 +15,7 @@ MeasurementSystem::MeasurementSystem(QObject *parent) :
 }
 
 MeasurementSystem::~MeasurementSystem() {
-    // cleanup voltage
-    if (this->voltage_ != NULL) {
-        delete this->voltage_;
-    }
+
 }
 
 void MeasurementSystem::connectToSystem(const QHostAddress& address, int port) {
@@ -42,8 +39,9 @@ void MeasurementSystem::connected() {
     input_stream >> this->drive_count();
 
     // create matrix
-    this->voltage_ = new fastEIT::Matrix<fastEIT::dtype::real>(this->measurement_count(),
-                                                               this->drive_count(), NULL);
+    cudaStream_t stream = NULL;
+    this->voltage_ = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(this->measurement_count(),
+                                                               this->drive_count(), stream);
 
     // connect ready read signal
     connect(&this->measurement_system_socket(), SIGNAL(readyRead()), this, SLOT(readyRead()));
@@ -54,9 +52,9 @@ void MeasurementSystem::readyRead() {
     QDataStream input_stream(&this->measurement_system_socket());
 
     // read voltage
-    for (fastEIT::dtype::index column = 0; column < this->voltage().columns(); ++column) {
-        for (fastEIT::dtype::index row = 0; row < this->voltage().rows(); ++row) {
-            input_stream >> this->voltage()(row, column);
+    for (fastEIT::dtype::index column = 0; column < this->voltage()->columns(); ++column) {
+        for (fastEIT::dtype::index row = 0; row < this->voltage()->rows(); ++row) {
+            input_stream >> (*this->voltage())(row, column);
         }
     }
 
@@ -67,11 +65,6 @@ void MeasurementSystem::readyRead() {
 void MeasurementSystem::disconnected() {
     // cleanup
     disconnect(&this->measurement_system_socket(), SIGNAL(readyRead()), this, SLOT(readyRead()));
-
-    if (this->voltage_ != NULL) {
-        delete this->voltage_;
-        this->voltage_ = NULL;
-    }
 }
 
 void MeasurementSystem::connectionError(QAbstractSocket::SocketError socket_error) {

@@ -31,14 +31,14 @@ public:
     const fastEIT::dtype::size& electrodes_count() const { return this->electrodes_count_; }
     const fastEIT::dtype::size& drive_count() const { return this->drive_count_; }
     const fastEIT::dtype::size& measurement_count() const { return this->measurement_count_; }
-    const fastEIT::Matrix<fastEIT::dtype::real>& voltage() const { return *this->voltage_; }
+    const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> voltage() const { return this->voltage_; }
 
     // mutators
     QTcpSocket& measurement_system_socket() { return *this->measurement_system_socket_; }
     fastEIT::dtype::size& electrodes_count() { return this->electrodes_count_; }
     fastEIT::dtype::size& drive_count() { return this->drive_count_; }
     fastEIT::dtype::size& measurement_count() { return this->measurement_count_; }
-    fastEIT::Matrix<fastEIT::dtype::real>& voltage() { return *this->voltage_; }
+    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> voltage() { return this->voltage_; }
 
 // member
 private:
@@ -46,7 +46,7 @@ private:
     fastEIT::dtype::size electrodes_count_;
     fastEIT::dtype::size drive_count_;
     fastEIT::dtype::size measurement_count_;
-    fastEIT::Matrix<fastEIT::dtype::real>* voltage_;
+    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> voltage_;
 };
 
 #endif // MEASUREMENTSYSTEM_H

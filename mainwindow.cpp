@@ -113,8 +113,8 @@ void MainWindow::createStatusBar() {
 void MainWindow::draw() {
     // copy voltage
     if (this->measurement_system().isConnected()) {
-        this->measurement_system().voltage().copyToDevice(NULL);
-        this->solver()->measured_voltage()->copy(&this->measurement_system().voltage(), NULL);
+        this->measurement_system().voltage()->copyToDevice(NULL);
+        this->solver()->measured_voltage()->copy(this->measurement_system().voltage(), NULL);
     }
 
     // solve
@@ -180,8 +180,6 @@ void MainWindow::on_actionLoad_Voltage_triggered() {
 
         // copy voltage
         this->solver()->measured_voltage()->copy(voltage, NULL);
-
-        delete voltage;
     }
 }
 
@@ -194,7 +192,7 @@ void MainWindow::on_actionSave_Voltage_triggered() {
     if (file_name != "") {
         this->solver()->measured_voltage()->copyToHost(NULL);
         cudaStreamSynchronize(NULL);
-        fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage().get());
+        fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage());
     }
 }
 
@@ -210,7 +208,7 @@ void MainWindow::on_actionStop_Solver_triggered() {
 
 void MainWindow::on_actionCalibrate_triggered() {
     // set calibration voltage to current measurment voltage
-    this->solver()->calibration_voltage()->copy(this->solver()->measured_voltage().get(), NULL);
+    this->solver()->calibration_voltage()->copy(this->solver()->measured_voltage(), NULL);
 }
 
 void MainWindow::on_actionSave_Image_triggered() {
