@@ -5,6 +5,7 @@
 #include <QHostAddress>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <iostream>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "image.h"
@@ -57,6 +58,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create status bar
     this->createStatusBar();
+
+    // create musik maker
+    this->musik_maker_ = std::make_shared<MusikMaker>(this->solver()->model(), this);
 }
 
 MainWindow::~MainWindow() {
@@ -147,6 +151,10 @@ void MainWindow::draw() {
     // update min max label
     this->min_label().setText(QString("min: %1 dB").arg(min_value));
     this->max_label().setText(QString("max: %1 dB").arg(max_value));
+
+    auto position = this->musik_maker()->getPosition(gamma, 0.1);
+    auto node = this->musik_maker()->getNode(position);
+    std::cout << node << std::endl;
 }
 
 void MainWindow::measurementSystemConnectionError(QAbstractSocket::SocketError socket_error) {
