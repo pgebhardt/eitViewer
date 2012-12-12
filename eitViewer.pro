@@ -27,6 +27,14 @@ FORMS    += mainwindow.ui
 
 QMAKE_CXXFLAGS += -std=c++11
 
+macx {
+    QMAKE_CXXFLAGS += -stdlib=libc++
+    QMAKE_LIBS += -lc++
+    QMAKE_LIBS += -Xlinker -rpath /usr/local/cuda/lib
+    QMAKE_CXX = clang++
+    QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
+}
+
 unix:!symbian: LIBS += -L$$PWD/../../../../../../usr/local/lib/ -lfasteit
 
 INCLUDEPATH += $$PWD/../../../../../../usr/local/include

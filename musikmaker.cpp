@@ -1,3 +1,4 @@
+#include <cmath>
 #include "musikmaker.h"
 
 MusikMaker::MusikMaker(std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model,
