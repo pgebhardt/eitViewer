@@ -58,18 +58,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create status bar
     this->createStatusBar();
-
-    // create musik maker
-    this->voltage_server_ = new VoltageServer(this->solver()->measured_voltage());
-    this->voltage_server_->thread()->start();
-    this->musik_maker_ = std::make_shared<MusikMaker>(this->solver()->model(), this);
 }
 
 MainWindow::~MainWindow() {
-    // stop voltage server
-    this->voltage_server_->thread()->quit();
-    this->voltage_server_->thread()->wait();
-
     delete this->ui;
     cublasDestroy(this->handle_);
 }
@@ -157,9 +148,6 @@ void MainWindow::draw() {
     // update min max label
     this->min_label().setText(QString("min: %1 dB").arg(min_value));
     this->max_label().setText(QString("max: %1 dB").arg(max_value));
-
-    // play sound
-    this->musik_maker()->playNode(gamma, 0.1);
 }
 
 void MainWindow::measurementSystemConnectionError(QAbstractSocket::SocketError socket_error) {

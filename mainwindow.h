@@ -7,8 +7,6 @@
 #include <QLabel>
 #include <fasteit/fasteit.h>
 #include "measurementsystem.h"
-#include "musikmaker.h"
-#include "voltageserver.h"
 
 namespace Ui {
 class MainWindow;
@@ -52,7 +50,6 @@ public:
         return this->solver_;
     }
     const MeasurementSystem& measurement_system() const { return *this->measurement_system_; }
-    const std::shared_ptr<MusikMaker> musik_maker() const { return this->musik_maker_; }
     const cublasHandle_t& handle() const { return this->handle_; }
     const QTimer& draw_timer() const { return *this->draw_timer_; }
     const QTime& time() const { return this->time_; }
@@ -63,7 +60,6 @@ public:
     // mutators
     std::shared_ptr<fastEIT::Solver<fastEIT::basis::Linear>> solver() { return this->solver_; }
     MeasurementSystem& measurement_system() { return *this->measurement_system_; }
-    std::shared_ptr<MusikMaker> musik_maker() { return this->musik_maker_; }
     cublasHandle_t& handle() { return this->handle_; }
     QTimer& draw_timer() { return *this->draw_timer_; }
     QTime& time() { return this->time_; }
@@ -75,15 +71,12 @@ private:
     Ui::MainWindow *ui;
     MeasurementSystem* measurement_system_;
     std::shared_ptr<fastEIT::Solver<fastEIT::basis::Linear>> solver_;
-    std::shared_ptr<MusikMaker> musik_maker_;
     cublasHandle_t handle_;
     QTimer* draw_timer_;
     QTime time_;
     QLabel* fps_label_;
     QLabel* min_label_;
     QLabel* max_label_;
-    VoltageServer* voltage_server_;
-
 };
 
 #endif // MAINWINDOW_H
