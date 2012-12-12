@@ -5,7 +5,14 @@
 MusikMaker::MusikMaker(std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model,
                        QObject *parent) :
     QObject(parent), model_(model) {
-    this->sounds_.push_back(new QSound("wave/test.wave"));
+    // load nodes
+    this->sounds()["A"] = new QSound("wave/test.wav");
+    this->sounds()["B"] = new QSound("wave/test.wav");
+    this->sounds()["C"] = new QSound("wave/test.wav");
+    this->sounds()["D"] = new QSound("wave/test.wav");
+    this->sounds()["E"] = new QSound("wave/test.wav");
+    this->sounds()["F"] = new QSound("wave/test.wav");
+    this->sounds()["G"] = new QSound("wave/test.wav");
 }
 
 std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> MusikMaker::getPosition(
@@ -41,14 +48,14 @@ std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> MusikMaker::getPosition(
     return mid_point;
 }
 
-std::string MusikMaker::getNode(
+QString MusikMaker::getNode(
     std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> position) {
     // convert to polar coordinates
     fastEIT::dtype::real radius, angle;
     std::tie(radius, angle) = fastEIT::math::polar(position);
 
     // check radius
-    std::string node = "";
+    QString node = "";
     if (radius < this->model()->mesh()->radius() / 3.0) {
         node = "X";
     } else {
@@ -56,4 +63,18 @@ std::string MusikMaker::getNode(
     }
 
     return node;
+}
+
+void MusikMaker::playNode(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> gamma,
+              fastEIT::dtype::real threshold) {
+    // get position
+    auto position = this->getPosition(gamma, threshold);
+
+    // get node
+    auto node = this->getNode(position);
+
+    // play node if new
+    if ((node != "X") && (node != this->previous_node())) {
+       this->sounds()[node]->play();
+    }
 }
