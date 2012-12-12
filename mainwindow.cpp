@@ -63,6 +63,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->voltage_server_ = new VoltageServer(this->solver()->measured_voltage());
     this->voltage_server_->thread()->start();
     this->musik_maker_ = std::make_shared<MusikMaker>(this->solver()->model(), this);
+    this->musik_maker()->sound(0)->play();
 }
 
 MainWindow::~MainWindow() {

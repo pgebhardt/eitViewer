@@ -1,9 +1,11 @@
 #include <cmath>
+#include <iostream>
 #include "musikmaker.h"
 
 MusikMaker::MusikMaker(std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model,
                        QObject *parent) :
     QObject(parent), model_(model) {
+    this->sounds_.push_back(new QSound("wave/test.wave"));
 }
 
 std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> MusikMaker::getPosition(

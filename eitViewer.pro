@@ -9,7 +9,6 @@ QT       += core gui opengl network
 TARGET = eitViewer
 TEMPLATE = app
 
-
 SOURCES += main.cpp\
         mainwindow.cpp \
     image.cpp \
