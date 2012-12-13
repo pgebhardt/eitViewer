@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/mesh">
+        <file>boundary.txt</file>
+        <file>elements.txt</file>
+        <file>nodes.txt</file>
+    </qresource>
+</RCC>

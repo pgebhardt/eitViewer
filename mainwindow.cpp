@@ -6,6 +6,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <iostream>
+#include <sstream>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "image.h"
@@ -69,13 +70,25 @@ void MainWindow::createSolver() {
     // cuda stream
     cudaStream_t stream = NULL;
 
+    // load resources
+    QFile nodes_file(":/mesh/nodes.txt");
+    QFile elements_file(":/mesh/elements.txt");
+    QFile boundary_file(":/mesh/boundary.txt");
+    nodes_file.open(QIODevice::ReadOnly | QIODevice::Text);
+    elements_file.open(QIODevice::ReadOnly | QIODevice::Text);
+    boundary_file.open(QIODevice::ReadOnly | QIODevice::Text);
+
+    std::stringstream nodes_stream(QString(nodes_file.readAll()).toStdString());
+    std::stringstream elements_stream(QString(elements_file.readAll()).toStdString());
+    std::stringstream boundary_stream(QString(boundary_file.readAll()).toStdString());
+
     // load mesh
     auto nodes = std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>(
-        fastEIT::matrix::loadtxt<fastEIT::dtype::real>("nodes.txt", stream));
+        fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&nodes_stream, stream));
     auto elements = std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::index>>(
-        fastEIT::matrix::loadtxt<fastEIT::dtype::index>("elements.txt", stream));
+        fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&elements_stream, stream));
     auto boundary = std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::index>>(
-        fastEIT::matrix::loadtxt<fastEIT::dtype::index>("boundary.txt", stream));
+        fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&boundary_stream, stream));
 
     // create model
     auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(

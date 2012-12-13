@@ -45,4 +45,10 @@ unix:!symbian: LIBS += -L$$PWD/../../../../../../usr/local/cuda/lib64/ -lcublas
 INCLUDEPATH += $$PWD/../../../../../../usr/local/cuda/include
 DEPENDPATH += $$PWD/../../../../../../usr/local/cuda/include
 
-OTHER_FILES +=
+OTHER_FILES += \
+    nodes.txt \
+    elements.txt \
+    boundary.txt
+
+RESOURCES += \
+    mesh.qrc
