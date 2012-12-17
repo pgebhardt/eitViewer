@@ -28,7 +28,6 @@ macx {
     QMAKE_CXXFLAGS += -stdlib=libc++
     QMAKE_LIBS += -lc++
     QMAKE_LIBS += -Xlinker -rpath /usr/local/cuda/lib
-    QMAKE_CXX = clang++
     QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
 }
 
