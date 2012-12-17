@@ -12,11 +12,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     image.cpp \
-    measurementsystem.cpp
+    measurementsystem.cpp \
+    jsonobject.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
-    measurementsystem.h
+    measurementsystem.h \
+    jsonobject.h
 
 FORMS    += mainwindow.ui
 
@@ -45,10 +47,6 @@ unix:!symbian: LIBS += -L$$PWD/../../../../../../usr/local/cuda/lib64/ -lcublas
 INCLUDEPATH += $$PWD/../../../../../../usr/local/cuda/include
 DEPENDPATH += $$PWD/../../../../../../usr/local/cuda/include
 
-OTHER_FILES += \
-    nodes.txt \
-    elements.txt \
-    boundary.txt
+OTHER_FILES +=
 
-RESOURCES += \
-    mesh.qrc
+RESOURCES +=

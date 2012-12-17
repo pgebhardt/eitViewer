@@ -11,6 +11,7 @@
 #include "ui_mainwindow.h"
 #include "image.h"
 #include "measurementsystem.h"
+#include "jsonobject.h"
 
 // create pattern
 std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> createPattern(fastEIT::dtype::size electrodes_count,
@@ -51,12 +52,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(&this->measurement_system(), SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(measurementSystemConnectionError(QAbstractSocket::SocketError)));
 
-    // create solver
-    this->createSolver();
-
-    // create image
-    this->setCentralWidget(new Image(this->solver()->model()));
-
     // create status bar
     this->createStatusBar();
 }
@@ -64,47 +59,6 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow() {
     delete this->ui;
     cublasDestroy(this->handle_);
-}
-
-void MainWindow::createSolver() {
-    // cuda stream
-    cudaStream_t stream = NULL;
-
-    // load resources
-    QFile nodes_file(":/mesh/nodes.txt");
-    QFile elements_file(":/mesh/elements.txt");
-    QFile boundary_file(":/mesh/boundary.txt");
-    nodes_file.open(QIODevice::ReadOnly | QIODevice::Text);
-    elements_file.open(QIODevice::ReadOnly | QIODevice::Text);
-    boundary_file.open(QIODevice::ReadOnly | QIODevice::Text);
-
-    std::stringstream nodes_stream(QString(nodes_file.readAll()).toStdString());
-    std::stringstream elements_stream(QString(elements_file.readAll()).toStdString());
-    std::stringstream boundary_stream(QString(boundary_file.readAll()).toStdString());
-
-    // load mesh
-    auto nodes = std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>(
-        fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&nodes_stream, stream));
-    auto elements = std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::index>>(
-        fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&elements_stream, stream));
-    auto boundary = std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::index>>(
-        fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&boundary_stream, stream));
-
-    // create model
-    auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
-        std::make_shared<fastEIT::Mesh<fastEIT::basis::Linear>>(nodes, elements, boundary, 0.045, 0.1),
-        std::make_shared<fastEIT::Electrodes>(36, 0.003, 0.003, 0.045), 50e-3, 4, this->handle(), stream);
-
-    // create pattern
-    auto drive_pattern = createPattern(36, 35, 2, stream);
-    auto measurement_pattern = createPattern(36, 0, 4, stream);
-
-    // create solver
-    this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::basis::Linear>>(
-        model, measurement_pattern, drive_pattern, 0.05, this->handle(), stream);
-
-    // pre solve
-    this->solver()->preSolve(this->handle(), stream);
 }
 
 void MainWindow::createStatusBar() {
@@ -257,3 +211,72 @@ void MainWindow::on_actionDisconnect_triggered() {
    // disconnect from measurement system
     this->measurement_system().disconnectFromSystem();
 }
+
+void MainWindow::on_actionOpen_triggered() {
+    // get open file name
+    QString file_name = QFileDialog::getOpenFileName(this, "Load Solver", "",
+                                                     "Solver File (*.conf)");
+
+    // load solver
+    if (file_name != "") {
+        // open file
+        QFile file(file_name);
+        file.open(QIODevice::ReadOnly | QIODevice::Text);
+
+        // parse to json object
+        JsonObject config(QString(file.readAll()).trimmed());
+
+        // get configs
+        JsonObject solver_config = config.getObject("solver");
+        JsonObject model_config = config.getObject("model");
+
+        // create electrodes
+        auto electrodes = std::make_shared<fastEIT::Electrodes>(
+                    model_config.getObject("electrodes").getInt("count"),
+                    model_config.getObject("electrodes").getDouble("width"),
+                    model_config.getObject("electrodes").getDouble("height"),
+                    model_config.getObject("mesh").getDouble("radius"));
+
+        // load mesh matrices
+        std::stringstream nodes_stream(model_config.getObject("mesh").getString("nodes").toStdString());
+        std::stringstream elements_stream(model_config.getObject("mesh").getString("elements").toStdString());
+        std::stringstream boundary_stream(model_config.getObject("mesh").getString("boundary").toStdString());
+
+        // load mesh
+        auto nodes = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&nodes_stream, nullptr);
+        auto elements = fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&elements_stream, nullptr);
+        auto boundary = fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&boundary_stream, nullptr);
+
+        // create mesh
+        auto mesh = std::make_shared<fastEIT::Mesh<fastEIT::basis::Linear>>(nodes, elements, boundary,
+                                                          model_config.getObject("mesh").getDouble("radius"),
+                                                          model_config.getObject("mesh").getDouble("height"));
+
+        // create model
+        auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
+            mesh, electrodes, model_config.getDouble("sigma_ref"),
+            model_config.getInt("num_harmonics"), this->handle(), nullptr);
+
+        // create pattern
+        std::stringstream drive_pattern_stream(solver_config.getString("drive_pattern").toStdString());
+        std::stringstream measurement_pattern_stream(solver_config.getString("measurement_pattern").toStdString());
+        auto drive_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&drive_pattern_stream, nullptr);
+        auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
+
+        // create solver
+        this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::basis::Linear>>(
+            model, measurement_pattern, drive_pattern,
+            solver_config.getDouble("regularization_factor  "), this->handle(), nullptr);
+
+        // pre solve
+        this->solver()->preSolve(this->handle(), nullptr);
+
+        // create image
+        this->setCentralWidget(new Image(this->solver()->model()));
+    }
+}
+void MainWindow::on_actionExit_triggered() {
+    // quit application
+    this->close();
+}
+

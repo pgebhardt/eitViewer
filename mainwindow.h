@@ -12,8 +12,7 @@ namespace Ui {
 class MainWindow;
 }
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
     
 public:
@@ -40,8 +39,11 @@ private slots:
 
     void on_actionDisconnect_triggered();
 
+    void on_actionExit_triggered();
+
+    void on_actionOpen_triggered();
+
 protected:
-    void createSolver();
     void createStatusBar();
 
 public:
