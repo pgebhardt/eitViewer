@@ -153,10 +153,10 @@ void Image::paintGL() {
     glColor3f(0.0, 0.0, 0.0);
 
     for (fastEIT::dtype::index electrode = 0; electrode < this->model()->electrodes()->count(); ++electrode) {
-        glVertex3f(std::get<0>(this->model()->electrodes()->electrodes_start()[electrode]) / this->model()->mesh()->radius(),
-                   std::get<1>(this->model()->electrodes()->electrodes_start()[electrode]) / this->model()->mesh()->radius(), 0.0);
-        glVertex3f(std::get<0>(this->model()->electrodes()->electrodes_end()[electrode]) / this->model()->mesh()->radius(),
-                   std::get<1>(this->model()->electrodes()->electrodes_end()[electrode]) / this->model()->mesh()->radius(), 0.0);
+        glVertex3f(std::get<0>(std::get<0>(this->model()->electrodes()->coordinates()[electrode])) / this->model()->mesh()->radius(),
+                   std::get<1>(std::get<0>(this->model()->electrodes()->coordinates()[electrode])) / this->model()->mesh()->radius(), 0.0);
+        glVertex3f(std::get<0>(std::get<1>(this->model()->electrodes()->coordinates()[electrode])) / this->model()->mesh()->radius(),
+                   std::get<1>(std::get<1>(this->model()->electrodes()->coordinates()[electrode])) / this->model()->mesh()->radius(), 0.0);
     }
     glEnd();
 
