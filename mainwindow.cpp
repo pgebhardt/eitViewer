@@ -224,8 +224,8 @@ void MainWindow::on_actionOpen_triggered() {
                                                           model_config.getObject("mesh").getDouble("height"));
 
         // load pattern
-        std::stringstream drive_pattern_stream(solver_config.getString("drive_pattern").toStdString());
-        std::stringstream measurement_pattern_stream(solver_config.getString("measurement_pattern").toStdString());
+        std::stringstream drive_pattern_stream(model_config.getObject("electrodes").getString("drive_pattern").toStdString());
+        std::stringstream measurement_pattern_stream(model_config.getObject("electrodes").getString("measurement_pattern").toStdString());
         auto drive_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&drive_pattern_stream, nullptr);
         auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
 
@@ -239,7 +239,7 @@ void MainWindow::on_actionOpen_triggered() {
         // create model
         auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
             mesh, electrodes, model_config.getDouble("sigma_ref"),
-            model_config.getInt("num_harmonics"), this->handle(), nullptr);
+            model_config.getInt("components_count"), this->handle(), nullptr);
 
         // create solver
         this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::basis::Linear>>(
