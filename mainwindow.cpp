@@ -13,28 +13,6 @@
 #include "measurementsystem.h"
 #include "jsonobject.h"
 
-// create pattern
-std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> createPattern(fastEIT::dtype::size electrodes_count,
-    fastEIT::dtype::index first_element, fastEIT::dtype::index step_width,
-        cudaStream_t stream) {
-    // create matrix
-    auto pattern = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
-        electrodes_count, electrodes_count / step_width, stream);
-
-    // fill pattern
-    for (fastEIT::dtype::index i = 0; i < pattern->columns(); ++i) {
-        (*pattern)((first_element + (i + 0) * step_width) % electrodes_count, i) =
-            (fastEIT::dtype::real)((i + 1) % 2) * 2.0 - 1.0;
-        (*pattern)((first_element + (i + 1) * step_width) % electrodes_count, i) =
-            (fastEIT::dtype::real)(i % 2) * 2.0 - 1.0;
-    }
-
-    // upload pattern
-    pattern->copyToDevice(stream);
-
-    return pattern;
-}
-
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow) {
@@ -230,13 +208,6 @@ void MainWindow::on_actionOpen_triggered() {
         JsonObject solver_config = config.getObject("solver");
         JsonObject model_config = config.getObject("model");
 
-        // create electrodes
-        auto electrodes = std::make_shared<fastEIT::Electrodes>(
-                    model_config.getObject("electrodes").getInt("count"),
-                    model_config.getObject("electrodes").getDouble("width"),
-                    model_config.getObject("electrodes").getDouble("height"),
-                    model_config.getObject("mesh").getDouble("radius"));
-
         // load mesh matrices
         std::stringstream nodes_stream(model_config.getObject("mesh").getString("nodes").toStdString());
         std::stringstream elements_stream(model_config.getObject("mesh").getString("elements").toStdString());
@@ -252,21 +223,27 @@ void MainWindow::on_actionOpen_triggered() {
                                                           model_config.getObject("mesh").getDouble("radius"),
                                                           model_config.getObject("mesh").getDouble("height"));
 
-        // create model
-        auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
-            mesh, electrodes, model_config.getDouble("sigma_ref"),
-            model_config.getInt("num_harmonics"), this->handle(), nullptr);
-
-        // create pattern
+        // load pattern
         std::stringstream drive_pattern_stream(solver_config.getString("drive_pattern").toStdString());
         std::stringstream measurement_pattern_stream(solver_config.getString("measurement_pattern").toStdString());
         auto drive_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&drive_pattern_stream, nullptr);
         auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
 
+        // create electrodes
+        auto electrodes = std::make_shared<fastEIT::Electrodes<fastEIT::Mesh<fastEIT::basis::Linear>>>(
+                    model_config.getObject("electrodes").getInt("count"),
+                    model_config.getObject("electrodes").getDouble("width"),
+                    model_config.getObject("electrodes").getDouble("height"),
+                    mesh, drive_pattern, measurement_pattern);
+
+        // create model
+        auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
+            mesh, electrodes, model_config.getDouble("sigma_ref"),
+            model_config.getInt("num_harmonics"), this->handle(), nullptr);
+
         // create solver
         this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::basis::Linear>>(
-            model, measurement_pattern, drive_pattern,
-            solver_config.getDouble("regularization_factor  "), this->handle(), nullptr);
+            model, solver_config.getDouble("regularization_factor"), this->handle(), nullptr);
 
         // pre solve
         this->solver()->preSolve(this->handle(), nullptr);

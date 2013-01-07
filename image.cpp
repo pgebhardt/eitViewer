@@ -35,9 +35,9 @@ Image::Image(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model
 
         for (fastEIT::dtype::index node = 0; node < nodes.size(); ++node) {
             this->vertices_[element * model->mesh()->elements()->columns() * 2
-                    + node * 2 + 0] = std::get<0>(nodes[node]) / model->mesh()->radius();
+                    + node * 2 + 0] = std::get<0>(std::get<1>(nodes[node])) / model->mesh()->radius();
             this->vertices_[element * model->mesh()->elements()->columns() * 2
-                    + node * 2 + 1] = std::get<1>(nodes[node]) / model->mesh()->radius();
+                    + node * 2 + 1] = std::get<1>(std::get<1>(nodes[node])) / model->mesh()->radius();
         }
     }
 }
