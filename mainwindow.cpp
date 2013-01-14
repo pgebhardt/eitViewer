@@ -223,27 +223,32 @@ void MainWindow::on_actionOpen_triggered() {
                                                           model_config.getObject("mesh").getDouble("radius"),
                                                           model_config.getObject("mesh").getDouble("height"));
 
-        // load pattern
-        std::stringstream drive_pattern_stream(model_config.getObject("electrodes").getString("drive_pattern").toStdString());
-        std::stringstream measurement_pattern_stream(model_config.getObject("electrodes").getString("measurement_pattern").toStdString());
-        auto drive_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&drive_pattern_stream, nullptr);
-        auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
-
         // create electrodes
         auto electrodes = std::make_shared<fastEIT::Electrodes<fastEIT::Mesh<fastEIT::basis::Linear>>>(
                     model_config.getObject("electrodes").getInt("count"),
-                    model_config.getObject("electrodes").getDouble("width"),
-                    model_config.getObject("electrodes").getDouble("height"),
-                    mesh, drive_pattern, measurement_pattern);
+                    std::make_tuple(model_config.getObject("electrodes").getDouble("width"),
+                                    model_config.getObject("electrodes").getDouble("height")),
+                    mesh);
 
         // create model
         auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
             mesh, electrodes, model_config.getDouble("sigma_ref"),
             model_config.getInt("components_count"), this->handle(), nullptr);
 
+        // load pattern
+        std::stringstream drive_pattern_stream(solver_config.getString("drive_pattern").toStdString());
+        std::stringstream measurement_pattern_stream(solver_config.getString("measurement_pattern").toStdString());
+        auto drive_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&drive_pattern_stream, nullptr);
+        auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
+
+        // create source
+        auto source = std::make_shared<fastEIT::source::Current>(1.0, drive_pattern,
+            measurement_pattern);
+
         // create solver
-        this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::basis::Linear>>(
-            model, solver_config.getDouble("regularization_factor"), this->handle(), nullptr);
+        this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>,
+            fastEIT::source::Current>>(model, source,
+            solver_config.getDouble("regularization_factor"), this->handle(), nullptr);
 
         // pre solve
         this->solver()->preSolve(this->handle(), nullptr);
