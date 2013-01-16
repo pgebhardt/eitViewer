@@ -506,7 +506,7 @@ JsonObject::JsonObject(QString jsonData)
                 this->put(key,False);
             else//Number
             {
-                if(value.contains('.'))//double
+                if((value.contains('.')) || (value.contains('e')) || (value.contains('E'))) //double
                 {
                     bool ok;
                     double doubleValue = value.toDouble(&ok);

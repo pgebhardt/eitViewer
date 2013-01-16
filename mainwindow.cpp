@@ -57,42 +57,42 @@ void MainWindow::createStatusBar() {
 }
 
 void MainWindow::draw() {
-    // copy voltage
-    if (this->measurement_system().isConnected()) {
-        this->measurement_system().voltage()->copyToDevice(NULL);
-        this->solver()->measured_voltage()->copy(this->measurement_system().voltage(), NULL);
-    }
-
-    // solve
-    this->time().restart();
-    auto gamma = this->solver()->solve(this->handle(), NULL);
-    gamma->copyToHost(NULL);
-    cudaStreamSynchronize(NULL);
-
-    // calc fps
-    this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
-
-    // cut values
-    for (fastEIT::dtype::index element = 0; element < gamma->rows(); ++element) {
-        if ((!this->ui->actionShow_Negative_Values->isChecked()) && ((*gamma)(element, 0) < 0.0)) {
-            (*gamma)(element, 0) = 0.0;
+    // check for image
+    if (this->image()) {
+        // copy voltage
+        if (this->measurement_system().isConnected()) {
+            this->measurement_system().voltage()->copyToDevice(NULL);
+            this->solver()->measured_voltage()->copy(this->measurement_system().voltage(), NULL);
         }
-        if ((!this->ui->actionShow_Positive_Values->isChecked()) && ((*gamma)(element, 0) > 0.0)) {
-            (*gamma)(element, 0) = 0.0;
+
+        // solve
+        this->time().restart();
+        auto gamma = this->solver()->solve(this->handle(), NULL);
+        gamma->copyToHost(NULL);
+        cudaStreamSynchronize(NULL);
+
+        // calc fps
+        this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
+
+        // cut values
+        for (fastEIT::dtype::index element = 0; element < gamma->rows(); ++element) {
+            if ((!this->ui->actionShow_Negative_Values->isChecked()) && ((*gamma)(element, 0) < 0.0)) {
+                (*gamma)(element, 0) = 0.0;
+            }
+            if ((!this->ui->actionShow_Positive_Values->isChecked()) && ((*gamma)(element, 0) > 0.0)) {
+                (*gamma)(element, 0) = 0.0;
+            }
         }
+
+        // update image
+        fastEIT::dtype::real min_value, max_value;
+        std::tie(min_value, max_value) = this->image()->draw(gamma,
+            this->ui->actionShow_Transparent_Values->isChecked());
+
+        // update min max label
+        this->min_label().setText(QString("min: %1 dB").arg(min_value));
+        this->max_label().setText(QString("max: %1 dB").arg(max_value));
     }
-
-    // get image
-    Image* image = static_cast<Image*>(this->centralWidget());
-
-    // update image
-    fastEIT::dtype::real min_value, max_value;
-    std::tie(min_value, max_value) = image->draw(gamma,
-        this->ui->actionShow_Transparent_Values->isChecked());
-
-    // update min max label
-    this->min_label().setText(QString("min: %1 dB").arg(min_value));
-    this->max_label().setText(QString("max: %1 dB").arg(max_value));
 }
 
 void MainWindow::measurementSystemConnectionError(QAbstractSocket::SocketError socket_error) {
@@ -158,19 +158,19 @@ void MainWindow::on_actionCalibrate_triggered() {
 }
 
 void MainWindow::on_actionSave_Image_triggered() {
-    // get image
-    Image* image = static_cast<Image*>(this->centralWidget());
+    // check for image
+    if (this->image()) {
+        // grap frame buffer
+        QImage bitmap = this->image()->grabFrameBuffer();
 
-    // grap frame buffer
-    QImage bitmap = image->grabFrameBuffer();
+        // get save file name
+        QString file_name = QFileDialog::getSaveFileName(this, "Save Image", "",
+                                                        "PNG File (*.png)");
 
-    // get save file name
-    QString file_name = QFileDialog::getSaveFileName(this, "Save Image", "",
-                                                    "PNG File (*.png)");
-
-    // save image
-    if (file_name != "") {
-        bitmap.save(file_name, "PNG");
+        // save image
+        if (file_name != "") {
+            bitmap.save(file_name, "PNG");
+        }
     }
 }
 
@@ -208,15 +208,23 @@ void MainWindow::on_actionOpen_triggered() {
         JsonObject solver_config = config.getObject("solver");
         JsonObject model_config = config.getObject("model");
 
-        // load mesh matrices
+        // load mesh strings
         std::stringstream nodes_stream(model_config.getObject("mesh").getString("nodes").toStdString());
         std::stringstream elements_stream(model_config.getObject("mesh").getString("elements").toStdString());
         std::stringstream boundary_stream(model_config.getObject("mesh").getString("boundary").toStdString());
 
-        // load mesh
+        // load pattern strings
+        std::stringstream drive_pattern_stream(model_config.getObject("source").getString("drive_pattern").toStdString());
+        std::stringstream measurement_pattern_stream(model_config.getObject("source").getString("measurement_pattern").toStdString());
+
+        // load mesh matrices
         auto nodes = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&nodes_stream, nullptr);
         auto elements = fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&elements_stream, nullptr);
         auto boundary = fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&boundary_stream, nullptr);
+
+        // load pattern matrices
+        auto drive_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&drive_pattern_stream, nullptr);
+        auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
 
         // create mesh
         auto mesh = std::make_shared<fastEIT::Mesh<fastEIT::basis::Linear>>(nodes, elements, boundary,
@@ -230,31 +238,26 @@ void MainWindow::on_actionOpen_triggered() {
                                     model_config.getObject("electrodes").getDouble("height")),
                     mesh);
 
+        // create source
+        auto source = std::make_shared<fastEIT::source::Current>(model_config.getObject("source").getDouble("current"),
+                                                                 drive_pattern, measurement_pattern);
+
         // create model
-        auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
-            mesh, electrodes, model_config.getDouble("sigma_ref"),
+        auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear, fastEIT::source::Current>>(
+            mesh, electrodes, source, model_config.getDouble("sigma_ref"),
             model_config.getInt("components_count"), this->handle(), nullptr);
 
-        // load pattern
-        std::stringstream drive_pattern_stream(solver_config.getString("drive_pattern").toStdString());
-        std::stringstream measurement_pattern_stream(solver_config.getString("measurement_pattern").toStdString());
-        auto drive_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&drive_pattern_stream, nullptr);
-        auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
-
-        // create source
-        auto source = std::make_shared<fastEIT::source::Current>(1.0, drive_pattern,
-            measurement_pattern);
-
         // create solver
-        this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>,
-            fastEIT::source::Current>>(model, source,
-            solver_config.getDouble("regularization_factor"), this->handle(), nullptr);
+        this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear,
+            fastEIT::source::Current>>>(model, solver_config.getDouble("regularization_factor"),
+                                        this->handle(), nullptr);
 
         // pre solve
         this->solver()->preSolve(this->handle(), nullptr);
 
         // create image
-        this->setCentralWidget(new Image(this->solver()->model()));
+        this->image_ = new Image(this->solver()->model());
+        this->setCentralWidget(this->image());
     }
 }
 void MainWindow::on_actionExit_triggered() {

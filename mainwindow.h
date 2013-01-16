@@ -6,6 +6,7 @@
 #include <QTime>
 #include <QLabel>
 #include <fasteit/fasteit.h>
+#include "image.h"
 #include "measurementsystem.h"
 
 namespace Ui {
@@ -48,11 +49,12 @@ protected:
 
 public:
     // accessor
-    const std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>,
-        fastEIT::source::Current>> solver() const {
+    const MeasurementSystem& measurement_system() const { return *this->measurement_system_; }
+    const std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear,
+        fastEIT::source::Current>>> solver() const {
         return this->solver_;
     }
-    const MeasurementSystem& measurement_system() const { return *this->measurement_system_; }
+    const Image* image() const { return this->image_; }
     const cublasHandle_t& handle() const { return this->handle_; }
     const QTimer& draw_timer() const { return *this->draw_timer_; }
     const QTime& time() const { return this->time_; }
@@ -61,11 +63,12 @@ public:
     const QLabel& max_label() const { return *this->max_label_; }
 
     // mutators
-    std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>,
-        fastEIT::source::Current>> solver() {
+    MeasurementSystem& measurement_system() { return *this->measurement_system_; }
+    std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear,
+        fastEIT::source::Current>>> solver() {
         return this->solver_;
     }
-    MeasurementSystem& measurement_system() { return *this->measurement_system_; }
+    Image* image() { return this->image_; }
     cublasHandle_t& handle() { return this->handle_; }
     QTimer& draw_timer() { return *this->draw_timer_; }
     QTime& time() { return this->time_; }
@@ -76,8 +79,9 @@ public:
 private:
     Ui::MainWindow *ui;
     MeasurementSystem* measurement_system_;
-    std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>,
-        fastEIT::source::Current>> solver_;
+    std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear,
+        fastEIT::source::Current>>> solver_;
+    Image* image_;
     cublasHandle_t handle_;
     QTimer* draw_timer_;
     QTime time_;

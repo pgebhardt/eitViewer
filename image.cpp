@@ -16,8 +16,7 @@ void jet(const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, fa
     }
 }
 
-Image::Image(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model,
-             QWidget *parent) :
+Image::Image(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear, fastEIT::source::Current>> model, QWidget *parent) :
     QGLWidget(parent), model_(model), red_(model->mesh()->elements()->rows()),
     green_(model->mesh()->elements()->rows()), blue_(model->mesh()->elements()->rows()) {
     // create buffer
@@ -60,7 +59,7 @@ std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
     }
 
     // calc norm
-    fastEIT::dtype::real norm = std::max(std::max(-min_value, max_value), 0.1f);
+    fastEIT::dtype::real norm = std::max(std::max(-min_value, max_value), 1e-4f);
 
     // calc colors
     jet(values, norm, &this->red(), &this->green(), &this->blue());
