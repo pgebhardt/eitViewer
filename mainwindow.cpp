@@ -239,18 +239,19 @@ void MainWindow::on_actionOpen_triggered() {
                     model_config.getObject("electrodes").getDouble("impedance"), mesh);
 
         // create source
-        auto source = std::make_shared<fastEIT::source::Current>(model_config.getObject("source").getDouble("current"),
+        auto source = std::make_shared<fastEIT::source::Current>(std::make_tuple(
+                                                                     model_config.getObject("source").getDouble("current"),
+                                                                     model_config.getObject("source").getDouble("current")),
                                                                  drive_pattern, measurement_pattern);
 
         // create model
-        auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear, fastEIT::source::Current>>(
+        auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
             mesh, electrodes, source, model_config.getDouble("sigma_ref"),
             model_config.getInt("components_count"), this->handle(), nullptr);
 
         // create solver
-        this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear,
-            fastEIT::source::Current>>>(model, solver_config.getDouble("regularization_factor"),
-                                        this->handle(), nullptr);
+        this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>>>(
+            model, solver_config.getDouble("regularization_factor"), this->handle(), nullptr);
 
         // pre solve
         this->solver()->preSolve(this->handle(), nullptr);

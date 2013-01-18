@@ -16,7 +16,7 @@ void jet(const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, fa
     }
 }
 
-Image::Image(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear, fastEIT::source::Current>> model, QWidget *parent) :
+Image::Image(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model, QWidget *parent) :
     QGLWidget(parent), model_(model), red_(model->mesh()->elements()->rows()),
     green_(model->mesh()->elements()->rows()), blue_(model->mesh()->elements()->rows()) {
     // create buffer
@@ -34,7 +34,7 @@ Image::Image(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear, fastEI
 
         for (fastEIT::dtype::index node = 0; node < nodes.size(); ++node) {
             this->vertices_[element * model->mesh()->elements()->columns() * 2
-                    + node * 2 + 0] = std::get<0>(std::get<1>(nodes[node])) / model->mesh()->radius();
+                    + node * 2 + 0] = -std::get<0>(std::get<1>(nodes[node])) / model->mesh()->radius();
             this->vertices_[element * model->mesh()->elements()->columns() * 2
                     + node * 2 + 1] = std::get<1>(std::get<1>(nodes[node])) / model->mesh()->radius();
         }

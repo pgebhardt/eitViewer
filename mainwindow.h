@@ -50,8 +50,7 @@ protected:
 public:
     // accessor
     const MeasurementSystem& measurement_system() const { return *this->measurement_system_; }
-    const std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear,
-        fastEIT::source::Current>>> solver() const {
+    const std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>>> solver() const {
         return this->solver_;
     }
     const Image* image() const { return this->image_; }
@@ -64,8 +63,7 @@ public:
 
     // mutators
     MeasurementSystem& measurement_system() { return *this->measurement_system_; }
-    std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear,
-        fastEIT::source::Current>>> solver() {
+    std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>>> solver() {
         return this->solver_;
     }
     Image* image() { return this->image_; }
@@ -79,8 +77,7 @@ public:
 private:
     Ui::MainWindow *ui;
     MeasurementSystem* measurement_system_;
-    std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear,
-        fastEIT::source::Current>>> solver_;
+    std::shared_ptr<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>>> solver_;
     Image* image_;
     cublasHandle_t handle_;
     QTimer* draw_timer_;
