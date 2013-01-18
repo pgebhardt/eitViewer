@@ -201,64 +201,70 @@ void MainWindow::on_actionOpen_triggered() {
         QFile file(file_name);
         file.open(QIODevice::ReadOnly | QIODevice::Text);
 
-        // parse to json object
-        JsonObject config(QString(file.readAll()).trimmed());
+        try {
+            // parse to json object
+            JsonObject config(QString(file.readAll()).trimmed());
 
-        // get configs
-        JsonObject solver_config = config.getObject("solver");
-        JsonObject model_config = config.getObject("model");
+            // get configs
+            JsonObject solver_config = config.getObject("solver");
+            JsonObject model_config = config.getObject("model");
 
-        // load mesh strings
-        std::stringstream nodes_stream(model_config.getObject("mesh").getString("nodes").toStdString());
-        std::stringstream elements_stream(model_config.getObject("mesh").getString("elements").toStdString());
-        std::stringstream boundary_stream(model_config.getObject("mesh").getString("boundary").toStdString());
+            // load mesh strings
+            std::stringstream nodes_stream(model_config.getObject("mesh").getString("nodes").toStdString());
+            std::stringstream elements_stream(model_config.getObject("mesh").getString("elements").toStdString());
+            std::stringstream boundary_stream(model_config.getObject("mesh").getString("boundary").toStdString());
 
-        // load pattern strings
-        std::stringstream drive_pattern_stream(model_config.getObject("source").getString("drive_pattern").toStdString());
-        std::stringstream measurement_pattern_stream(model_config.getObject("source").getString("measurement_pattern").toStdString());
+            // load pattern strings
+            std::stringstream drive_pattern_stream(model_config.getObject("source").getString("drive_pattern").toStdString());
+            std::stringstream measurement_pattern_stream(model_config.getObject("source").getString("measurement_pattern").toStdString());
 
-        // load mesh matrices
-        auto nodes = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&nodes_stream, nullptr);
-        auto elements = fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&elements_stream, nullptr);
-        auto boundary = fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&boundary_stream, nullptr);
+            // load mesh matrices
+            auto nodes = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&nodes_stream, nullptr);
+            auto elements = fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&elements_stream, nullptr);
+            auto boundary = fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&boundary_stream, nullptr);
 
-        // load pattern matrices
-        auto drive_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&drive_pattern_stream, nullptr);
-        auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
+            // load pattern matrices
+            auto drive_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&drive_pattern_stream, nullptr);
+            auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
 
-        // create mesh
-        auto mesh = std::make_shared<fastEIT::Mesh<fastEIT::basis::Linear>>(nodes, elements, boundary,
-                                                          model_config.getObject("mesh").getDouble("radius"),
-                                                          model_config.getObject("mesh").getDouble("height"));
+            // create mesh
+            auto mesh = std::make_shared<fastEIT::Mesh<fastEIT::basis::Linear>>(nodes, elements, boundary,
+                                                              model_config.getObject("mesh").getDouble("radius"),
+                                                              model_config.getObject("mesh").getDouble("height"));
 
-        // create electrodes
-        auto electrodes = std::make_shared<fastEIT::Electrodes<fastEIT::Mesh<fastEIT::basis::Linear>>>(
-                    model_config.getObject("electrodes").getInt("count"),
-                    std::make_tuple(model_config.getObject("electrodes").getDouble("width"),
-                                    model_config.getObject("electrodes").getDouble("height")),
-                    model_config.getObject("electrodes").getDouble("impedance"), mesh);
+            // create electrodes
+            auto electrodes = std::make_shared<fastEIT::Electrodes<fastEIT::Mesh<fastEIT::basis::Linear>>>(
+                        model_config.getObject("electrodes").getInt("count"),
+                        std::make_tuple(model_config.getObject("electrodes").getDouble("width"),
+                                        model_config.getObject("electrodes").getDouble("height")),
+                        model_config.getObject("electrodes").getDouble("impedance"), mesh);
 
-        // create source
-        auto source = std::make_shared<fastEIT::source::Current>(std::make_tuple(
-                                                                     model_config.getObject("source").getDouble("current"),
-                                                                     model_config.getObject("source").getDouble("current")),
-                                                                 drive_pattern, measurement_pattern);
+            // create source
+            auto source = std::make_shared<fastEIT::source::Current>(std::make_tuple(
+                                                                         model_config.getObject("source").getDouble("current"),
+                                                                         model_config.getObject("source").getDouble("current")),
+                                                                     drive_pattern, measurement_pattern);
 
-        // create model
-        auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
-            mesh, electrodes, source, model_config.getDouble("sigma_ref"),
-            model_config.getInt("components_count"), this->handle(), nullptr);
+            // create model
+            auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
+                mesh, electrodes, source, model_config.getDouble("sigma_ref"),
+                model_config.getInt("components_count"), this->handle(), nullptr);
 
-        // create solver
-        this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>>>(
-            model, solver_config.getDouble("regularization_factor"), this->handle(), nullptr);
+            // create solver
+            this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>>>(
+                model, solver_config.getDouble("regularization_factor"), this->handle(), nullptr);
 
-        // pre solve
-        this->solver()->preSolve(this->handle(), nullptr);
+            // pre solve
+            this->solver()->preSolve(this->handle(), nullptr);
 
-        // create image
-        this->image_ = new Image(this->solver()->model());
-        this->setCentralWidget(this->image());
+            // create image
+            this->image_ = new Image(this->solver()->model());
+            this->setCentralWidget(this->image());
+
+        } catch (std::exception& e) {
+            QMessageBox::information(this, this->windowTitle(),
+                                     tr("Cannot load solver config!"));
+        }
     }
 }
 void MainWindow::on_actionExit_triggered() {
