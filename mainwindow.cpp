@@ -236,7 +236,7 @@ void MainWindow::on_actionOpen_triggered() {
                     model_config.getObject("electrodes").getInt("count"),
                     std::make_tuple(model_config.getObject("electrodes").getDouble("width"),
                                     model_config.getObject("electrodes").getDouble("height")),
-                    mesh);
+                    model_config.getObject("electrodes").getDouble("impedance"), mesh);
 
         // create source
         auto source = std::make_shared<fastEIT::source::Current>(model_config.getObject("source").getDouble("current"),
