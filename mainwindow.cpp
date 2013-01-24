@@ -240,9 +240,7 @@ void MainWindow::on_actionOpen_triggered() {
                         model_config.getObject("electrodes").getDouble("impedance"), mesh);
 
             // create source
-            auto source = std::make_shared<fastEIT::source::Current>(std::make_tuple(
-                                                                         model_config.getObject("source").getDouble("current"),
-                                                                         model_config.getObject("source").getDouble("current")),
+            auto source = std::make_shared<fastEIT::source::Current>(model_config.getObject("source").getDouble("current"),
                                                                      drive_pattern, measurement_pattern);
 
             // create model

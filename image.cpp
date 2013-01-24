@@ -34,9 +34,9 @@ Image::Image(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model
 
         for (fastEIT::dtype::index node = 0; node < nodes.size(); ++node) {
             this->vertices_[element * model->mesh()->elements()->columns() * 2
-                    + node * 2 + 0] = -std::get<0>(std::get<1>(nodes[node])) / model->mesh()->radius();
+                    + node * 2 + 0] = std::get<1>(std::get<1>(nodes[node])) / model->mesh()->radius();
             this->vertices_[element * model->mesh()->elements()->columns() * 2
-                    + node * 2 + 1] = std::get<1>(std::get<1>(nodes[node])) / model->mesh()->radius();
+                    + node * 2 + 1] = std::get<0>(std::get<1>(nodes[node])) / model->mesh()->radius();
         }
     }
 }
@@ -59,7 +59,7 @@ std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
     }
 
     // calc norm
-    fastEIT::dtype::real norm = std::max(std::max(-min_value, max_value), 1e-4f);
+    fastEIT::dtype::real norm = std::max(std::max(-min_value, max_value), 0.1f);
 
     // calc colors
     jet(values, norm, &this->red(), &this->green(), &this->blue());
