@@ -31,11 +31,6 @@ macx {
     QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
 }
 
-unix:!symbian: LIBS += -L$$PWD/../../../../../../usr/local/lib/ -lfasteit
-
-INCLUDEPATH += $$PWD/../../../../../../usr/local/include
-DEPENDPATH += $$PWD/../../../../../../usr/local/include
-
 unix:!symbian: LIBS += -L$$PWD/../../../../../../usr/local/cuda/lib64/ -lcudart
 
 INCLUDEPATH += $$PWD/../../../../../../usr/local/cuda/include
@@ -49,3 +44,8 @@ DEPENDPATH += $$PWD/../../../../../../usr/local/cuda/include
 OTHER_FILES +=
 
 RESOURCES +=
+
+unix:!symbian: LIBS += -L$$DESTDIR/libs/fasteit/lib/ -lfasteit
+
+INCLUDEPATH += $$DESTDIR/libs/fasteit/include
+DEPENDPATH += $$DESTDIR/libs/fasteit/include
