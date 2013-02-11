@@ -40,7 +40,7 @@ OTHER_FILES +=
 
 RESOURCES +=
 
-unix:!symbian: LIBS += -L$$DESTDIR/libs/fasteit/lib/ -lfasteit
+unix:!symbian: LIBS += -Llibs/lib/ -lfasteit
 
-INCLUDEPATH += $$DESTDIR/libs/fasteit/include
-DEPENDPATH += $$DESTDIR/libs/fasteit/include
+INCLUDEPATH += libs/include
+DEPENDPATH += libs/include
