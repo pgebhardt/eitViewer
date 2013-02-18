@@ -31,7 +31,7 @@ macx {
     QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
 }
 
-unix:!symbian: LIBS += -L/usr/local/cuda/lib64/ -lcudart -lcublas
+unix:!symbian: LIBS += -L/usr/local/cuda/lib64/ -lcudart -lcublas -ldl
 
 INCLUDEPATH += /usr/local/cuda/include
 DEPENDPATH += /usr/local/cuda/include
