@@ -233,11 +233,11 @@ void MainWindow::on_actionOpen_triggered() {
                                                               model_config.getObject("mesh").getDouble("height"));
 
             // create electrodes
-            auto electrodes = std::make_shared<fastEIT::Electrodes<fastEIT::Mesh<fastEIT::basis::Linear>>>(
+            auto electrodes = fastEIT::electrodes::circularBoundary(
                         model_config.getObject("electrodes").getInt("count"),
                         std::make_tuple(model_config.getObject("electrodes").getDouble("width"),
                                         model_config.getObject("electrodes").getDouble("height")),
-                        1.0, mesh);
+                        1.0, mesh->radius());
 
             // create model
             auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
