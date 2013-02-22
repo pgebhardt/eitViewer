@@ -228,9 +228,9 @@ void MainWindow::on_actionOpen_triggered() {
             auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
 
             // create mesh
-            auto mesh = std::make_shared<fastEIT::Mesh<fastEIT::basis::Linear>>(nodes, elements, boundary,
-                                                              model_config.getObject("mesh").getDouble("radius"),
-                                                              model_config.getObject("mesh").getDouble("height"));
+            auto mesh = std::make_shared<fastEIT::Mesh>(nodes, elements, boundary,
+                                                        model_config.getObject("mesh").getDouble("radius"),
+                                                        model_config.getObject("mesh").getDouble("height"));
 
             // create electrodes
             auto electrodes = fastEIT::electrodes::circularBoundary(
