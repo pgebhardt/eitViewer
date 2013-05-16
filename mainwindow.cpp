@@ -26,9 +26,8 @@ MainWindow::MainWindow(QWidget *parent) :
     cublasCreate(&this->handle_);
 
     // create measurement system
-    this->measurement_system_ = new MeasurementSystem(this);
-    connect(&this->measurement_system(), SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(measurementSystemConnectionError(QAbstractSocket::SocketError)));
+    auto measurement = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(1, 1, nullptr);
+    this->measurement_system_ = new MeasurementSystem(nullptr, measurement);
 
     // create status bar
     this->createStatusBar();
@@ -59,20 +58,12 @@ void MainWindow::createStatusBar() {
 void MainWindow::draw() {
     // check for image
     if (this->image()) {
-        // copy voltage
-        if (this->measurement_system().isConnected()) {
-            this->measurement_system().voltage()->copyToDevice(NULL);
-            this->solver()->measured_voltage()->copy(this->measurement_system().voltage(), NULL);
-        }
+        // copy data to device
+        this->solver()->measured_voltage()->copyToDevice(nullptr);
 
         // solve
-        this->time().restart();
         auto gamma = this->solver()->solve(this->handle(), NULL);
         gamma->copyToHost(NULL);
-        cudaStreamSynchronize(NULL);
-
-        // calc fps
-        this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
 
         // cut values
         for (fastEIT::dtype::index element = 0; element < gamma->rows(); ++element) {
@@ -87,31 +78,16 @@ void MainWindow::draw() {
         // update image
         fastEIT::dtype::real min_value, max_value;
         std::tie(min_value, max_value) = this->image()->draw(gamma,
-            this->ui->actionShow_Transparent_Values->isChecked());
+            this->ui->actionShow_Transparent_Values->isChecked(),
+            true);
+
+        // calc fps
+        this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
+        this->time().restart();
 
         // update min max label
         this->min_label().setText(QString("min: %1 dB").arg(min_value));
         this->max_label().setText(QString("max: %1 dB").arg(max_value));
-    }
-}
-
-void MainWindow::measurementSystemConnectionError(QAbstractSocket::SocketError socket_error) {
-    // check socket error
-    if (socket_error == QAbstractSocket::HostNotFoundError) {
-         QMessageBox::information(this, this->windowTitle(),
-                                  tr("The host was not found. Please check the "
-                                     "host name and port settings."));
-
-    } else if (socket_error == QAbstractSocket::ConnectionRefusedError) {
-         QMessageBox::information(this, this->windowTitle(),
-                                  tr("The connection was refused by the measurement system. "
-                                     "Make sure the system is running, "
-                                     "and check that the host name and port "
-                                     "settings are correct."));
-    } else if (socket_error == QAbstractSocket::RemoteHostClosedError) {
-         QMessageBox::information(this, this->windowTitle(),
-                                  tr("The measurement system closed the connection. "
-                                     "Make sure the system is still running."));
     }
 }
 
@@ -122,10 +98,11 @@ void MainWindow::on_actionLoad_Voltage_triggered() {
 
     if (file_name != "") {
         // load matrix
-        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), NULL);
+        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), nullptr);
 
         // copy voltage
-        this->solver()->measured_voltage()->copy(voltage, NULL);
+        this->solver()->measured_voltage()->copy(voltage, nullptr);
+        this->solver()->measured_voltage()->copyToHost(nullptr);
     }
 }
 
@@ -136,15 +113,15 @@ void MainWindow::on_actionSave_Voltage_triggered() {
 
     // save voltage
     if (file_name != "") {
-        this->solver()->measured_voltage()->copyToHost(NULL);
-        cudaStreamSynchronize(NULL);
+        this->solver()->measured_voltage()->copyToHost(nullptr);
+        cudaStreamSynchronize(nullptr);
         fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage());
     }
 }
 
 void MainWindow::on_actionStart_Solver_triggered() {
     // start timer
-    this->draw_timer().start(40);
+    this->draw_timer().start(30);
 }
 
 void MainWindow::on_actionStop_Solver_triggered() {
@@ -172,22 +149,6 @@ void MainWindow::on_actionSave_Image_triggered() {
             bitmap.save(file_name, "PNG");
         }
     }
-}
-
-void MainWindow::on_actionConnect_triggered() {
-    // get host address
-    bool ok;
-    QString host_address = QInputDialog::getText(this, "Measurement System Host Address", "Host Address", QLineEdit::Normal, "127.0.0.1", &ok);
-
-    // connect to system
-    if (ok) {
-        this->measurement_system().connectToSystem(QHostAddress(host_address), 3000);
-    }
-}
-
-void MainWindow::on_actionDisconnect_triggered() {
-   // disconnect from measurement system
-    this->measurement_system().disconnectFromSystem();
 }
 
 void MainWindow::on_actionOpen_triggered() {
@@ -228,37 +189,43 @@ void MainWindow::on_actionOpen_triggered() {
             auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
 
             // create mesh
-            auto mesh = std::make_shared<fastEIT::Mesh>(nodes, elements, boundary,
-                                                        model_config.getObject("mesh").getDouble("radius"),
-                                                        model_config.getObject("mesh").getDouble("height"));
+            auto mesh = fastEIT::mesh::quadraticBasis(nodes, elements, boundary,
+                model_config.getObject("mesh").getDouble("radius"),
+                model_config.getObject("mesh").getDouble("height"), nullptr);
 
             // create electrodes
             auto electrodes = fastEIT::electrodes::circularBoundary(
-                        model_config.getObject("electrodes").getInt("count"),
-                        std::make_tuple(model_config.getObject("electrodes").getDouble("width"),
-                                        model_config.getObject("electrodes").getDouble("height")),
-                        1.0, mesh->radius());
-
-            // create model
-            auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Linear>>(
-                mesh, electrodes, model_config.getDouble("sigma_ref"),
-                model_config.getInt("components_count"), this->handle(), nullptr);
+                model_config.getObject("electrodes").getInt("count"),
+                std::make_tuple(model_config.getObject("electrodes").getDouble("width"),
+                    model_config.getObject("electrodes").getDouble("height")),
+                1.0, mesh->radius());
 
             // create source
-            auto source = std::make_shared<fastEIT::source::Current<fastEIT::Model<fastEIT::basis::Linear>>>(
-                model_config.getObject("source").getDouble("current"), model, drive_pattern, measurement_pattern,
+            auto source = std::make_shared<fastEIT::source::Current<fastEIT::basis::Quadratic>>(
+                model_config.getObject("source").getDouble("current"), mesh, electrodes,
+                model_config.getInt("components_count"), drive_pattern, measurement_pattern,
                 this->handle(), nullptr);
 
-            // create solver
-            this->solver_ = std::make_shared<fastEIT::Solver<fastEIT::Model<fastEIT::basis::Linear>>>(
-                model, source, solver_config.getDouble("regularization_factor"), this->handle(), nullptr);
+            // create model
+            auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Quadratic>>(
+                mesh, electrodes, source, model_config.getDouble("sigma_ref"),
+                model_config.getInt("components_count"), this->handle(), nullptr);
 
-            // pre solve
+            // create and init solver
+            this->solver_ = std::make_shared<fastEIT::Solver>(model,
+                solver_config.getDouble("regularization_factor"), this->handle(), nullptr);
             this->solver()->preSolve(this->handle(), nullptr);
+            this->solver()->measured_voltage()->copyToHost(nullptr);
 
             // create image
             this->image_ = new Image(this->solver()->model());
+            this->image()->draw(this->solver()->dgamma(),
+                this->ui->actionShow_Transparent_Values->isChecked(),
+                true);
             this->setCentralWidget(this->image());
+
+            // set correct matrix for measurement system
+            this->measurement_system().setMeasurementMatrix(this->solver()->measured_voltage());
 
         } catch (std::exception& e) {
             QMessageBox::information(this, this->windowTitle(),

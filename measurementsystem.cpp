@@ -1,73 +1,44 @@
 #include "measurementsystem.h"
 #include <QDataStream>
 
-MeasurementSystem::MeasurementSystem(QObject *parent) :
-    QObject(parent), measurement_system_socket_(NULL), electrodes_count_(0), drive_count_(0),
-    measurement_count_(0), voltage_(NULL) {
-    // create tcp socket
-    this->measurement_system_socket_ = new QTcpSocket(this);
+MeasurementSystem::MeasurementSystem(QObject *parent,
+    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement) :
+    QObject(parent), measurement_system_socket_(nullptr), measurement_(measurement) {
+    // create separat thread
+    this->thread_ = new QThread();
+    connect(this->thread(), SIGNAL(started()), this, SLOT(init()));
+    this->moveToThread(this->thread());
 
-    // connect socket to slots
-    connect(&this->measurement_system_socket(), SIGNAL(connected()), this, SLOT(connected()));
-    connect(&this->measurement_system_socket(), SIGNAL(disconnected()), this, SLOT(disconnected()));
-    connect(&this->measurement_system_socket(), SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(connectionError(QAbstractSocket::SocketError)));
+    this->thread()->start();
 }
 
 MeasurementSystem::~MeasurementSystem() {
 
 }
 
-void MeasurementSystem::connectToSystem(const QHostAddress& address, int port) {
-    // connect to measurement system
-    this->measurement_system_socket().connectToHost(address, port);
-}
-
-void MeasurementSystem::disconnectFromSystem() {
-    // disconnect
-    this->measurement_system_socket().disconnectFromHost();
-}
-
-void MeasurementSystem::connected() {
-    // wait for data
-    this->measurement_system_socket().waitForReadyRead(1000);
-
-    // get electrodes, drive and measurement count
-    QDataStream input_stream(&this->measurement_system_socket());
-    input_stream >> this->electrodes_count();
-    input_stream >> this->measurement_count();
-    input_stream >> this->drive_count();
-
-    // create matrix
-    cudaStream_t stream = NULL;
-    this->voltage_ = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(this->measurement_count(),
-                                                               this->drive_count(), stream);
-
-    // connect ready read signal
+void MeasurementSystem::init() {
+    // create udp socket
+    this->measurement_system_socket_ = new QUdpSocket(this);
+    this->measurement_system_socket().bind(3002, QUdpSocket::ShareAddress);
     connect(&this->measurement_system_socket(), SIGNAL(readyRead()), this, SLOT(readyRead()));
 }
 
 void MeasurementSystem::readyRead() {
-    // create data stream
-    QDataStream input_stream(&this->measurement_system_socket());
+    // read measurement data for one excitation
+    QByteArray datagram;
+    datagram.resize((this->measurement()->rows() + 1) * 8);
+    this->measurement_system_socket().readDatagram(datagram.data(),
+        datagram.size(), nullptr, nullptr);
 
-    // read voltage
-    for (fastEIT::dtype::index column = 0; column < this->voltage()->columns(); ++column) {
-        for (fastEIT::dtype::index row = 0; row < this->voltage()->rows(); ++row) {
-            input_stream >> (*this->voltage())(row, column);
+    // extract measurement data
+    QDataStream input_stream(datagram);
+    double excitation = -1.0;
+    input_stream >> excitation;
+    if ((fastEIT::dtype::index)excitation < this->measurement()->columns()) {
+        double data = 0.0;
+        for (fastEIT::dtype::index i = 0; i < this->measurement()->rows(); ++i) {
+            input_stream >> data;
+            (*this->measurement())(i, (fastEIT::dtype::index)excitation) = data;
         }
     }
-
-    // clear buffer
-    this->measurement_system_socket().readAll();
-}
-
-void MeasurementSystem::disconnected() {
-    // cleanup
-    disconnect(&this->measurement_system_socket(), SIGNAL(readyRead()), this, SLOT(readyRead()));
-}
-
-void MeasurementSystem::connectionError(QAbstractSocket::SocketError socket_error) {
-    // emit error
-    emit this->error(socket_error);
 }

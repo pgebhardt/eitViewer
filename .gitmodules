@@ -1,3 +1,0 @@
-[submodule "submodules/fasteit"]
-	path = submodules/fasteit
-	url = git@gitlab.est.ruhr-uni-bochum.de:ecup3000/fasteit.git

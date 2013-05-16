@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui opengl network
+QT       += core widgets opengl network
 
 TARGET = eitViewer
 TEMPLATE = app
@@ -22,25 +22,21 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-QMAKE_CXXFLAGS += -std=c++11
+CONFIG += c++11
 
 macx {
     QMAKE_CXXFLAGS += -stdlib=libc++
     QMAKE_LIBS += -lc++
     QMAKE_LIBS += -Xlinker -rpath /usr/local/cuda/lib
-    QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
+    QMAKE_CXXFLAGS += -mmacosx-version-min=10.7
 }
 
-unix:!symbian: LIBS += -L/usr/local/cuda/lib64/ -lcudart -lcublas -ldl
+unix:!symbian: LIBS += -L/usr/local/cuda/lib -lcudart -lcublas -ldl
 
 INCLUDEPATH += /usr/local/cuda/include
 DEPENDPATH += /usr/local/cuda/include
 
-OTHER_FILES +=
+unix:!symbian: LIBS += -L/usr/local/lib -lfasteit
 
-RESOURCES +=
-
-unix:!symbian: LIBS += -Llibs/lib/ -lfasteit
-
-INCLUDEPATH += libs/include
-DEPENDPATH += libs/include
+INCLUDEPATH += /usr/local/include
+DEPENDPATH += /usr/local/include

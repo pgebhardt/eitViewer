@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuSolver">
@@ -45,13 +45,6 @@
     <addaction name="actionShow_Negative_Values"/>
     <addaction name="actionShow_Positive_Values"/>
    </widget>
-   <widget class="QMenu" name="menuMeasurement_System">
-    <property name="title">
-     <string>Measurement System</string>
-    </property>
-    <addaction name="actionConnect"/>
-    <addaction name="actionDisconnect"/>
-   </widget>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
@@ -62,7 +55,6 @@
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuSolver"/>
-   <addaction name="menuMeasurement_System"/>
    <addaction name="menuImage"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -101,7 +93,7 @@
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Show Transparent Values</string>

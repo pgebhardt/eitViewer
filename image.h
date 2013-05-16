@@ -9,7 +9,7 @@ class Image : public QGLWidget
 {
     Q_OBJECT
 public:
-    explicit Image(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model, QWidget *parent = 0);
+    explicit Image(const std::shared_ptr<fastEIT::model::Model> model, QWidget *parent = 0);
     virtual ~Image();
 
     void init(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model);
@@ -20,16 +20,20 @@ public slots:
 
 public:
     std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> draw(
-        const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool transparent);
+        const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool transparent,
+        bool normalized);
 
 protected:
     virtual void initializeGL();
     virtual void resizeGL(int w, int h);
     virtual void paintGL();
+    virtual void mousePressEvent(QMouseEvent* event);
+    virtual void mouseMoveEvent(QMouseEvent* event);
+    virtual void wheelEvent(QWheelEvent* event);
 
 public:
     // accessors
-    const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model() const {
+    const std::shared_ptr<fastEIT::model::Model> model() const {
         return this->model_;
     }
     const std::vector<fastEIT::dtype::real>& red() const {
@@ -46,14 +50,24 @@ public:
     std::vector<fastEIT::dtype::real>& red() { return this->red_; }
     std::vector<fastEIT::dtype::real>& green() { return this->green_; }
     std::vector<fastEIT::dtype::real>& blue() { return this->blue_; }
+    std::vector<fastEIT::dtype::real>& node_area() { return this->node_area_; }
+    fastEIT::dtype::real& x_angle() { return this->x_angle_; }
+    fastEIT::dtype::real& z_angle() { return this->z_angle_; }
+    std::tuple<int, int>& old_mouse_pos() { return this->old_mouse_pos_; }
+    fastEIT::dtype::real& normalization_factor() { return this->normalization_factor_; }
 
 private:
-    const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model_;
+    const std::shared_ptr<fastEIT::model::Model> model_;
     GLfloat* vertices_;
     GLfloat* colors_;
     std::vector<fastEIT::dtype::real> red_;
     std::vector<fastEIT::dtype::real> green_;
     std::vector<fastEIT::dtype::real> blue_;
+    std::vector<fastEIT::dtype::real> node_area_;
+    fastEIT::dtype::real x_angle_;
+    fastEIT::dtype::real z_angle_;
+    std::tuple<int, int> old_mouse_pos_;
+    fastEIT::dtype::real normalization_factor_;
 };
 
 #endif // IMAGE_H

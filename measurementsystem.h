@@ -2,51 +2,38 @@
 #define MEASUREMENTSYSTEM_H
 
 #include <QObject>
-#include <QTcpSocket>
+#include <QThread>
+#include <QUdpSocket>
 #include <fasteit/fasteit.h>
 
 class MeasurementSystem : public QObject
 {
     Q_OBJECT
 public:
-    explicit MeasurementSystem(QObject *parent = 0);
+    explicit MeasurementSystem(QObject *parent,
+        std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement);
     virtual ~MeasurementSystem();
-    void connectToSystem(const QHostAddress& address, int port);
-    void disconnectFromSystem();
 
-    bool isConnected() { return this->measurement_system_socket().state() == QAbstractSocket::ConnectedState; }
-
-signals:
-    void error(QAbstractSocket::SocketError socket_error);
-    
 public slots:
-    virtual void connected();
+    void init();
     virtual void readyRead();
-    virtual void disconnected();
-    virtual void connectionError(QAbstractSocket::SocketError socket_error);
 
 public:
     // accessors
-    const QTcpSocket& measurement_system_socket() const { return *this->measurement_system_socket_; }
-    const fastEIT::dtype::size& electrodes_count() const { return this->electrodes_count_; }
-    const fastEIT::dtype::size& drive_count() const { return this->drive_count_; }
-    const fastEIT::dtype::size& measurement_count() const { return this->measurement_count_; }
-    const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> voltage() const { return this->voltage_; }
-
-    // mutators
-    QTcpSocket& measurement_system_socket() { return *this->measurement_system_socket_; }
-    fastEIT::dtype::size& electrodes_count() { return this->electrodes_count_; }
-    fastEIT::dtype::size& drive_count() { return this->drive_count_; }
-    fastEIT::dtype::size& measurement_count() { return this->measurement_count_; }
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> voltage() { return this->voltage_; }
+    QUdpSocket& measurement_system_socket() { return *this->measurement_system_socket_; }
+    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement() {
+        return this->measurement_;
+    }
+    void setMeasurementMatrix(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> value) {
+        this->measurement_ = value;
+    }
+    QThread* thread() { return this->thread_; }
 
 // member
 private:
-    QTcpSocket* measurement_system_socket_;
-    fastEIT::dtype::size electrodes_count_;
-    fastEIT::dtype::size drive_count_;
-    fastEIT::dtype::size measurement_count_;
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> voltage_;
+    QUdpSocket* measurement_system_socket_;
+    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement_;
+    QThread* thread_;
 };
 
 #endif // MEASUREMENTSYSTEM_H
