@@ -151,6 +151,21 @@ void MainWindow::on_actionSave_Image_triggered() {
     }
 }
 
+template <
+    class type
+>
+std::shared_ptr<fastEIT::Matrix<type>> matrixFromJsonArray(const QJsonArray& array, cudaStream_t stream) {
+    auto matrix = std::make_shared<fastEIT::Matrix<type>>(array.size(), array.first().toArray().size(),
+        stream);
+    for (fastEIT::dtype::index row = 0; row < matrix->rows(); ++row)
+    for (fastEIT::dtype::index column = 0; column < matrix->columns(); ++column) {
+        (*matrix)(row, column) = array[row].toArray()[column].toDouble();
+    }
+    matrix->copyToDevice(nullptr);
+
+    return matrix;
+}
+
 void MainWindow::on_actionOpen_triggered() {
     // get open file name
     QString file_name = QFileDialog::getOpenFileName(this, "Load Solver", "",
@@ -172,56 +187,18 @@ void MainWindow::on_actionOpen_triggered() {
 
         try {
             // load mesh from config
-            auto nodes = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
-                config["model"].toObject()["mesh"].toObject()["nodes"].toArray().size(),
-                config["model"].toObject()["mesh"].toObject()["nodes"].toArray().first().toArray().size(),
-                nullptr);
-            for (fastEIT::dtype::index row = 0; row < nodes->rows(); ++row)
-            for (fastEIT::dtype::index column = 0; column < nodes->columns(); ++column) {
-                (*nodes)(row, column) = config["model"].toObject()["mesh"].toObject()["nodes"].toArray()[row].toArray()[column].toDouble();
-            }
-            nodes->copyToDevice(nullptr);
-
-            auto elements = std::make_shared<fastEIT::Matrix<fastEIT::dtype::index>>(
-                config["model"].toObject()["mesh"].toObject()["elements"].toArray().size(),
-                config["model"].toObject()["mesh"].toObject()["elements"].toArray().first().toArray().size(),
-                nullptr);
-            for (fastEIT::dtype::index row = 0; row < elements->rows(); ++row)
-            for (fastEIT::dtype::index column = 0; column < elements->columns(); ++column) {
-                (*elements)(row, column) = config["model"].toObject()["mesh"].toObject()["elements"].toArray()[row].toArray()[column].toDouble();
-            }
-            elements->copyToDevice(nullptr);
-
-            auto boundary = std::make_shared<fastEIT::Matrix<fastEIT::dtype::index>>(
-                config["model"].toObject()["mesh"].toObject()["boundary"].toArray().size(),
-                config["model"].toObject()["mesh"].toObject()["boundary"].toArray().first().toArray().size(),
-                nullptr);
-            for (fastEIT::dtype::index row = 0; row < boundary->rows(); ++row)
-            for (fastEIT::dtype::index column = 0; column < boundary->columns(); ++column) {
-                (*boundary)(row, column) = config["model"].toObject()["mesh"].toObject()["boundary"].toArray()[row].toArray()[column].toDouble();
-            }
-            boundary->copyToDevice(nullptr);
+            auto nodes = matrixFromJsonArray<fastEIT::dtype::real>(
+                config["model"].toObject()["mesh"].toObject()["nodes"].toArray(), nullptr);
+            auto elements = matrixFromJsonArray<fastEIT::dtype::index>(
+                config["model"].toObject()["mesh"].toObject()["elements"].toArray(), nullptr);
+            auto boundary = matrixFromJsonArray<fastEIT::dtype::index>(
+                config["model"].toObject()["mesh"].toObject()["boundary"].toArray(), nullptr);
 
             // load pattern from config
-            auto drive_pattern = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
-                config["model"].toObject()["source"].toObject()["drive_pattern"].toArray().size(),
-                config["model"].toObject()["source"].toObject()["drive_pattern"].toArray().first().toArray().size(),
-                nullptr);
-            for (fastEIT::dtype::index row = 0; row < drive_pattern->rows(); ++row)
-            for (fastEIT::dtype::index column = 0; column < drive_pattern->columns(); ++column) {
-                (*drive_pattern)(row, column) = config["model"].toObject()["source"].toObject()["drive_pattern"].toArray()[row].toArray()[column].toDouble();
-            }
-            drive_pattern->copyToDevice(nullptr);
-
-            auto measurement_pattern = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
-                config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray().size(),
-                config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray().first().toArray().size(),
-                nullptr);
-            for (fastEIT::dtype::index row = 0; row < measurement_pattern->rows(); ++row)
-            for (fastEIT::dtype::index column = 0; column < measurement_pattern->columns(); ++column) {
-                (*measurement_pattern)(row, column) = config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray()[row].toArray()[column].toDouble();
-            }
-            measurement_pattern->copyToDevice(nullptr);
+            auto drive_pattern = matrixFromJsonArray<fastEIT::dtype::real>(
+                config["model"].toObject()["source"].toObject()["drive_pattern"].toArray(), nullptr);
+            auto measurement_pattern = matrixFromJsonArray<fastEIT::dtype::real>(
+                config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray(), nullptr);
 
             // create mesh
             auto mesh = fastEIT::mesh::quadraticBasis(nodes, elements, boundary,
