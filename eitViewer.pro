@@ -12,13 +12,11 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     image.cpp \
-    measurementsystem.cpp \
-    jsonobject.cpp
+    measurementsystem.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
-    measurementsystem.h \
-    jsonobject.h
+    measurementsystem.h
 
 FORMS    += mainwindow.ui
 

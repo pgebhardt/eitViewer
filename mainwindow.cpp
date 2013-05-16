@@ -5,13 +5,13 @@
 #include <QHostAddress>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QJsonDocument>
 #include <iostream>
 #include <sstream>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "image.h"
 #include "measurementsystem.h"
-#include "jsonobject.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -162,58 +162,96 @@ void MainWindow::on_actionOpen_triggered() {
         QFile file(file_name);
         file.open(QIODevice::ReadOnly | QIODevice::Text);
 
+        // read json config
+        QString str;
+        str = file.readAll();
+        auto json_document = QJsonDocument::fromJson(str.toUtf8());
+        auto config = json_document.object();
+
+        file.close();
+
         try {
-            // parse to json object
-            JsonObject config(QString(file.readAll()).trimmed());
+            // load mesh from config
+            auto nodes = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
+                config["model"].toObject()["mesh"].toObject()["nodes"].toArray().size(),
+                config["model"].toObject()["mesh"].toObject()["nodes"].toArray().first().toArray().size(),
+                nullptr);
+            for (fastEIT::dtype::index row = 0; row < nodes->rows(); ++row)
+            for (fastEIT::dtype::index column = 0; column < nodes->columns(); ++column) {
+                (*nodes)(row, column) = config["model"].toObject()["mesh"].toObject()["nodes"].toArray()[row].toArray()[column].toDouble();
+            }
+            nodes->copyToDevice(nullptr);
 
-            // get configs
-            JsonObject solver_config = config.getObject("solver");
-            JsonObject model_config = config.getObject("model");
+            auto elements = std::make_shared<fastEIT::Matrix<fastEIT::dtype::index>>(
+                config["model"].toObject()["mesh"].toObject()["elements"].toArray().size(),
+                config["model"].toObject()["mesh"].toObject()["elements"].toArray().first().toArray().size(),
+                nullptr);
+            for (fastEIT::dtype::index row = 0; row < elements->rows(); ++row)
+            for (fastEIT::dtype::index column = 0; column < elements->columns(); ++column) {
+                (*elements)(row, column) = config["model"].toObject()["mesh"].toObject()["elements"].toArray()[row].toArray()[column].toDouble();
+            }
+            elements->copyToDevice(nullptr);
 
-            // load mesh strings
-            std::stringstream nodes_stream(model_config.getObject("mesh").getString("nodes").toStdString());
-            std::stringstream elements_stream(model_config.getObject("mesh").getString("elements").toStdString());
-            std::stringstream boundary_stream(model_config.getObject("mesh").getString("boundary").toStdString());
+            auto boundary = std::make_shared<fastEIT::Matrix<fastEIT::dtype::index>>(
+                config["model"].toObject()["mesh"].toObject()["boundary"].toArray().size(),
+                config["model"].toObject()["mesh"].toObject()["boundary"].toArray().first().toArray().size(),
+                nullptr);
+            for (fastEIT::dtype::index row = 0; row < boundary->rows(); ++row)
+            for (fastEIT::dtype::index column = 0; column < boundary->columns(); ++column) {
+                (*boundary)(row, column) = config["model"].toObject()["mesh"].toObject()["boundary"].toArray()[row].toArray()[column].toDouble();
+            }
+            boundary->copyToDevice(nullptr);
 
-            // load pattern strings
-            std::stringstream drive_pattern_stream(model_config.getObject("source").getString("drive_pattern").toStdString());
-            std::stringstream measurement_pattern_stream(model_config.getObject("source").getString("measurement_pattern").toStdString());
+            // load pattern from config
+            auto drive_pattern = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
+                config["model"].toObject()["source"].toObject()["drive_pattern"].toArray().size(),
+                config["model"].toObject()["source"].toObject()["drive_pattern"].toArray().first().toArray().size(),
+                nullptr);
+            for (fastEIT::dtype::index row = 0; row < drive_pattern->rows(); ++row)
+            for (fastEIT::dtype::index column = 0; column < drive_pattern->columns(); ++column) {
+                (*drive_pattern)(row, column) = config["model"].toObject()["source"].toObject()["drive_pattern"].toArray()[row].toArray()[column].toDouble();
+            }
+            drive_pattern->copyToDevice(nullptr);
 
-            // load mesh matrices
-            auto nodes = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&nodes_stream, nullptr);
-            auto elements = fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&elements_stream, nullptr);
-            auto boundary = fastEIT::matrix::loadtxt<fastEIT::dtype::index>(&boundary_stream, nullptr);
-
-            // load pattern matrices
-            auto drive_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&drive_pattern_stream, nullptr);
-            auto measurement_pattern = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(&measurement_pattern_stream, nullptr);
+            auto measurement_pattern = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
+                config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray().size(),
+                config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray().first().toArray().size(),
+                nullptr);
+            for (fastEIT::dtype::index row = 0; row < measurement_pattern->rows(); ++row)
+            for (fastEIT::dtype::index column = 0; column < measurement_pattern->columns(); ++column) {
+                (*measurement_pattern)(row, column) = config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray()[row].toArray()[column].toDouble();
+            }
+            measurement_pattern->copyToDevice(nullptr);
 
             // create mesh
             auto mesh = fastEIT::mesh::quadraticBasis(nodes, elements, boundary,
-                model_config.getObject("mesh").getDouble("radius"),
-                model_config.getObject("mesh").getDouble("height"), nullptr);
+                config["model"].toObject()["mesh"].toObject()["radius"].toDouble(),
+                config["model"].toObject()["mesh"].toObject()["height"].toDouble(),
+                nullptr);
 
             // create electrodes
             auto electrodes = fastEIT::electrodes::circularBoundary(
-                model_config.getObject("electrodes").getInt("count"),
-                std::make_tuple(model_config.getObject("electrodes").getDouble("width"),
-                    model_config.getObject("electrodes").getDouble("height")),
+                config["model"].toObject()["electrodes"].toObject()["count"].toDouble(),
+                std::make_tuple(config["model"].toObject()["electrodes"].toObject()["width"].toDouble(),
+                    config["model"].toObject()["electrodes"].toObject()["height"].toDouble()),
                 1.0, mesh->radius());
 
             // create source
             auto source = std::make_shared<fastEIT::source::Current<fastEIT::basis::Quadratic>>(
-                model_config.getObject("source").getDouble("current"), mesh, electrodes,
-                model_config.getInt("components_count"), drive_pattern, measurement_pattern,
-                this->handle(), nullptr);
+                config["model"].toObject()["source"].toObject()["current"].toDouble(),
+                mesh, electrodes, config["model"].toObject()["components_count"].toDouble(),
+                drive_pattern, measurement_pattern, this->handle(), nullptr);
 
             // create model
             auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Quadratic>>(
-                mesh, electrodes, source, model_config.getDouble("sigma_ref"),
-                model_config.getInt("components_count"), this->handle(), nullptr);
+                mesh, electrodes, source, config["model"].toObject()["sigma_ref"].toDouble(),
+                config["model"].toObject()["components_count"].toDouble(), this->handle(),
+                nullptr);
 
             // create and init solver
             this->solver_ = std::make_shared<fastEIT::Solver>(model,
-                solver_config.getDouble("regularization_factor"), this->handle(), nullptr);
+                config["solver"].toObject()["regularization_factor"].toDouble(),
+                this->handle(), nullptr);
             this->solver()->preSolve(this->handle(), nullptr);
             this->solver()->measured_voltage()->copyToHost(nullptr);
 
@@ -229,7 +267,7 @@ void MainWindow::on_actionOpen_triggered() {
 
         } catch (std::exception& e) {
             QMessageBox::information(this, this->windowTitle(),
-                                     tr("Cannot load solver config!"));
+                tr("Cannot load solver config"));
         }
     }
 }
