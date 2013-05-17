@@ -10,8 +10,8 @@ class MeasurementSystem : public QObject
 {
     Q_OBJECT
 public:
-    explicit MeasurementSystem(QObject *parent,
-        std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement);
+    explicit MeasurementSystem(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement,
+        QObject* parent=nullptr);
     virtual ~MeasurementSystem();
 
 public slots:

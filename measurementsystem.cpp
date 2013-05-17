@@ -1,8 +1,8 @@
 #include "measurementsystem.h"
 #include <QDataStream>
 
-MeasurementSystem::MeasurementSystem(QObject *parent,
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement) :
+MeasurementSystem::MeasurementSystem(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement,
+    QObject* parent) :
     QObject(parent), measurement_system_socket_(nullptr), measurement_(measurement) {
     // create separat thread
     this->thread_ = new QThread();

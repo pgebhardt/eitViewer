@@ -20,14 +20,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create timer
     this->draw_timer_ = new QTimer(this);
-    connect(this->draw_timer_, SIGNAL(timeout()), this, SLOT(draw()));
+    connect(this->draw_timer_, &QTimer::timeout, this, &MainWindow::draw);
 
     // create cublas handle
     cublasCreate(&this->handle_);
 
     // create measurement system
-    auto measurement = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(1, 1, nullptr);
-    this->measurement_system_ = new MeasurementSystem(nullptr, measurement);
+    this->measurement_system_ = new MeasurementSystem(
+        std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(1, 1, nullptr));
 
     // create status bar
     this->createStatusBar();
@@ -102,7 +102,7 @@ void MainWindow::draw() {
 
         // calc fps
         this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
-        this->solve_time_label().setText(QString("solve time: %1").arg(this->solver()->solve_time()));
+        this->solve_time_label().setText(QString("solve time: %1 ms").arg(this->solver()->solve_time()));
         this->time().restart();
 
         // update min max label
@@ -178,13 +178,11 @@ void MainWindow::on_actionOpen_triggered() {
         auto json_document = QJsonDocument::fromJson(str.toUtf8());
         auto config = json_document.object();
 
-        file.close();
-
-        std::cout << "main thread: " << QThread::currentThreadId() << std::endl;
-
         // create new Solver from config
         this->solver_ = new Solver(config);
         connect(this->solver_, &Solver::initialized, this, &MainWindow::on_solver_initialized);
+
+        file.close();
     }
 }
 
@@ -193,18 +191,21 @@ void MainWindow::on_actionExit_triggered() {
     this->close();
 }
 
-void MainWindow::on_solver_initialized() {
-    std::cout << "slot thread: " << QThread::currentThreadId() << std::endl;
+void MainWindow::on_solver_initialized(bool success) {
+    if (success) {
+        // create image
+        this->image_ = new Image(this->solver()->fasteit_solver()->model());
+        this->image()->draw(this->solver()->fasteit_solver()->dgamma(),
+            this->ui->actionShow_Transparent_Values->isChecked(),
+            true);
+        this->setCentralWidget(this->image());
+        this->draw_timer().start(20);
 
-    // create image
-    this->image_ = new Image(this->solver()->fasteit_solver()->model());
-    this->image()->draw(this->solver()->fasteit_solver()->dgamma(),
-        this->ui->actionShow_Transparent_Values->isChecked(),
-        true);
-    this->setCentralWidget(this->image());
-    this->draw_timer().start(20);
-
-    // set correct matrix for measurement system
-    this->measurement_system()->setMeasurementMatrix(this->solver()->measured_voltage());
+        // set correct matrix for measurement system
+        this->measurement_system()->setMeasurementMatrix(this->solver()->measured_voltage());
+    } else {
+        QMessageBox::information(this, this->windowTitle(),
+            tr("Cannot load solver from config!"));
+    }
 }
 

@@ -27,8 +27,8 @@ Solver::Solver(const QJsonObject& config, QObject *parent) :
     // create solver once thread is started
     connect(this->thread(), &QThread::started,
         [=] () {
-            std::cout << "solver thread: " << QThread::currentThreadId() << std::endl;
-
+        bool success = true;
+        try {
             // load mesh from config
             auto nodes = matrixFromJsonArray<fastEIT::dtype::real>(
                 config["model"].toObject()["mesh"].toObject()["nodes"].toArray(), nullptr);
@@ -75,9 +75,6 @@ Solver::Solver(const QJsonObject& config, QObject *parent) :
             this->fasteit_solver()->preSolve(this->handle(), nullptr);
             this->fasteit_solver()->measured_voltage()->copyToHost(nullptr);
 
-            // signal solver ready
-            emit this->initialized();
-
             // start solve timer
             this->timer_ = new QTimer();
             connect(this->timer(), &QTimer::timeout, [=]() {
@@ -89,6 +86,13 @@ Solver::Solver(const QJsonObject& config, QObject *parent) :
                 this->solve_time() = this->time().elapsed();
             });
             this->timer()->start(10);
+
+        } catch (const std::exception& e) {
+            success = false;
+        }
+
+        // signal solver ready
+        emit this->initialized(success);
     });
 
     // start thread

@@ -15,7 +15,7 @@ public:
     explicit Solver(const QJsonObject& config, QObject* parent=nullptr);
 
 signals:
-    void initialized();
+    void initialized(bool success);
 
 public:
     // accessors

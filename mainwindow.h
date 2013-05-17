@@ -36,7 +36,7 @@ private slots:
 
     void on_actionOpen_triggered();
 
-    void on_solver_initialized();
+    void on_solver_initialized(bool success);
 
 protected:
     void createStatusBar();
