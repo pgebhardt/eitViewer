@@ -12,11 +12,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     image.cpp \
-    measurementsystem.cpp
+    measurementsystem.cpp \
+    solver.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
-    measurementsystem.h
+    measurementsystem.h \
+    solver.h
 
 FORMS    += mainwindow.ui
 

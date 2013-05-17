@@ -36,21 +36,34 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow() {
     delete this->ui;
     cublasDestroy(this->handle_);
+
+    // stop threads
+    if (this->measurement_system()) {
+        this->measurement_system()->thread()->quit();
+        this->measurement_system()->thread()->wait();
+    }
+    if (this->solver()) {
+        this->solver()->thread()->quit();
+        this->solver()->thread()->wait();
+    }
 }
 
 void MainWindow::createStatusBar() {
     // create label
     this->fps_label_ = new QLabel("fps:", this);
+    this->solve_time_label_ = new QLabel("solve time:", this);
     this->min_label_ = new QLabel("min:", this);
     this->max_label_ = new QLabel("max:", this);
 
     // set frame style
     this->fps_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
+    this->solve_time_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
     this->min_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
     this->max_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
 
     // fill status bar
     this->statusBar()->addPermanentWidget(&this->fps_label(), 1);
+    this->statusBar()->addPermanentWidget(&this->solve_time_label(), 1);
     this->statusBar()->addPermanentWidget(&this->min_label(), 1);
     this->statusBar()->addPermanentWidget(&this->max_label(), 1);
 }
@@ -62,16 +75,22 @@ void MainWindow::draw() {
         this->solver()->measured_voltage()->copyToDevice(nullptr);
 
         // solve
-        auto gamma = this->solver()->solve(this->handle(), NULL);
-        gamma->copyToHost(NULL);
+        // auto gamma = this->solver()->solve(this->handle(), NULL);
+        auto gamma = this->solver()->fasteit_solver()->dgamma();
 
         // cut values
-        for (fastEIT::dtype::index element = 0; element < gamma->rows(); ++element) {
-            if ((!this->ui->actionShow_Negative_Values->isChecked()) && ((*gamma)(element, 0) < 0.0)) {
-                (*gamma)(element, 0) = 0.0;
+        if (!this->ui->actionShow_Negative_Values->isChecked()) {
+            for (fastEIT::dtype::index element = 0; element < gamma->rows(); ++element) {
+                if ((*gamma)(element, 0) < 0.0) {
+                    (*gamma)(element, 0) = 0.0;
+                }
             }
-            if ((!this->ui->actionShow_Positive_Values->isChecked()) && ((*gamma)(element, 0) > 0.0)) {
-                (*gamma)(element, 0) = 0.0;
+        }
+        if (!this->ui->actionShow_Positive_Values->isChecked()) {
+            for (fastEIT::dtype::index element = 0; element < gamma->rows(); ++element) {
+                if ((*gamma)(element, 0) > 0.0) {
+                    (*gamma)(element, 0) = 0.0;
+                }
             }
         }
 
@@ -83,6 +102,7 @@ void MainWindow::draw() {
 
         // calc fps
         this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
+        this->solve_time_label().setText(QString("solve time: %1").arg(this->solver()->solve_time()));
         this->time().restart();
 
         // update min max label
@@ -119,16 +139,6 @@ void MainWindow::on_actionSave_Voltage_triggered() {
     }
 }
 
-void MainWindow::on_actionStart_Solver_triggered() {
-    // start timer
-    this->draw_timer().start(30);
-}
-
-void MainWindow::on_actionStop_Solver_triggered() {
-    // stop timer
-    this->draw_timer().stop();
-}
-
 void MainWindow::on_actionCalibrate_triggered() {
     // set calibration voltage to current measurment voltage
     this->solver()->calibration_voltage()->copy(this->solver()->measured_voltage(), NULL);
@@ -151,21 +161,6 @@ void MainWindow::on_actionSave_Image_triggered() {
     }
 }
 
-template <
-    class type
->
-std::shared_ptr<fastEIT::Matrix<type>> matrixFromJsonArray(const QJsonArray& array, cudaStream_t stream) {
-    auto matrix = std::make_shared<fastEIT::Matrix<type>>(array.size(), array.first().toArray().size(),
-        stream);
-    for (fastEIT::dtype::index row = 0; row < matrix->rows(); ++row)
-    for (fastEIT::dtype::index column = 0; column < matrix->columns(); ++column) {
-        (*matrix)(row, column) = array[row].toArray()[column].toDouble();
-    }
-    matrix->copyToDevice(nullptr);
-
-    return matrix;
-}
-
 void MainWindow::on_actionOpen_triggered() {
     // get open file name
     QString file_name = QFileDialog::getOpenFileName(this, "Load Solver", "",
@@ -185,71 +180,31 @@ void MainWindow::on_actionOpen_triggered() {
 
         file.close();
 
-        try {
-            // load mesh from config
-            auto nodes = matrixFromJsonArray<fastEIT::dtype::real>(
-                config["model"].toObject()["mesh"].toObject()["nodes"].toArray(), nullptr);
-            auto elements = matrixFromJsonArray<fastEIT::dtype::index>(
-                config["model"].toObject()["mesh"].toObject()["elements"].toArray(), nullptr);
-            auto boundary = matrixFromJsonArray<fastEIT::dtype::index>(
-                config["model"].toObject()["mesh"].toObject()["boundary"].toArray(), nullptr);
+        std::cout << "main thread: " << QThread::currentThreadId() << std::endl;
 
-            // load pattern from config
-            auto drive_pattern = matrixFromJsonArray<fastEIT::dtype::real>(
-                config["model"].toObject()["source"].toObject()["drive_pattern"].toArray(), nullptr);
-            auto measurement_pattern = matrixFromJsonArray<fastEIT::dtype::real>(
-                config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray(), nullptr);
-
-            // create mesh
-            auto mesh = fastEIT::mesh::quadraticBasis(nodes, elements, boundary,
-                config["model"].toObject()["mesh"].toObject()["radius"].toDouble(),
-                config["model"].toObject()["mesh"].toObject()["height"].toDouble(),
-                nullptr);
-
-            // create electrodes
-            auto electrodes = fastEIT::electrodes::circularBoundary(
-                config["model"].toObject()["electrodes"].toObject()["count"].toDouble(),
-                std::make_tuple(config["model"].toObject()["electrodes"].toObject()["width"].toDouble(),
-                    config["model"].toObject()["electrodes"].toObject()["height"].toDouble()),
-                1.0, mesh->radius());
-
-            // create source
-            auto source = std::make_shared<fastEIT::source::Current<fastEIT::basis::Quadratic>>(
-                config["model"].toObject()["source"].toObject()["current"].toDouble(),
-                mesh, electrodes, config["model"].toObject()["components_count"].toDouble(),
-                drive_pattern, measurement_pattern, this->handle(), nullptr);
-
-            // create model
-            auto model = std::make_shared<fastEIT::Model<fastEIT::basis::Quadratic>>(
-                mesh, electrodes, source, config["model"].toObject()["sigma_ref"].toDouble(),
-                config["model"].toObject()["components_count"].toDouble(), this->handle(),
-                nullptr);
-
-            // create and init solver
-            this->solver_ = std::make_shared<fastEIT::Solver>(model,
-                config["solver"].toObject()["regularization_factor"].toDouble(),
-                this->handle(), nullptr);
-            this->solver()->preSolve(this->handle(), nullptr);
-            this->solver()->measured_voltage()->copyToHost(nullptr);
-
-            // create image
-            this->image_ = new Image(this->solver()->model());
-            this->image()->draw(this->solver()->dgamma(),
-                this->ui->actionShow_Transparent_Values->isChecked(),
-                true);
-            this->setCentralWidget(this->image());
-
-            // set correct matrix for measurement system
-            this->measurement_system().setMeasurementMatrix(this->solver()->measured_voltage());
-
-        } catch (std::exception& e) {
-            QMessageBox::information(this, this->windowTitle(),
-                tr("Cannot load solver config"));
-        }
+        // create new Solver from config
+        this->solver_ = new Solver(config);
+        connect(this->solver_, &Solver::initialized, this, &MainWindow::on_solver_initialized);
     }
 }
+
 void MainWindow::on_actionExit_triggered() {
     // quit application
     this->close();
+}
+
+void MainWindow::on_solver_initialized() {
+    std::cout << "slot thread: " << QThread::currentThreadId() << std::endl;
+
+    // create image
+    this->image_ = new Image(this->solver()->fasteit_solver()->model());
+    this->image()->draw(this->solver()->fasteit_solver()->dgamma(),
+        this->ui->actionShow_Transparent_Values->isChecked(),
+        true);
+    this->setCentralWidget(this->image());
+    this->draw_timer().start(20);
+
+    // set correct matrix for measurement system
+    this->measurement_system()->setMeasurementMatrix(this->solver()->measured_voltage());
 }
 

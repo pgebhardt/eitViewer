@@ -8,6 +8,7 @@
 #include <fasteit/fasteit.h>
 #include "image.h"
 #include "measurementsystem.h"
+#include "solver.h"
 
 namespace Ui {
 class MainWindow;
@@ -25,10 +26,6 @@ private slots:
 
     void on_actionLoad_Voltage_triggered();
 
-    void on_actionStart_Solver_triggered();
-
-    void on_actionStop_Solver_triggered();
-
     void on_actionCalibrate_triggered();
 
     void on_actionSave_Image_triggered();
@@ -39,30 +36,33 @@ private slots:
 
     void on_actionOpen_triggered();
 
+    void on_solver_initialized();
+
 protected:
     void createStatusBar();
 
 public:
     // accessor
-    MeasurementSystem& measurement_system() { return *this->measurement_system_; }
-    std::shared_ptr<fastEIT::Solver> solver() { return this->solver_; }
+    MeasurementSystem* measurement_system() { return this->measurement_system_; }
+    Solver* solver() { return this->solver_; }
     Image* image() { return this->image_; }
-    cublasHandle_t& handle() { return this->handle_; }
     QTimer& draw_timer() { return *this->draw_timer_; }
     QTime& time() { return this->time_; }
     QLabel& fps_label() { return *this->fps_label_; }
+    QLabel& solve_time_label() { return *this->solve_time_label_; }
     QLabel& min_label() { return *this->min_label_; }
     QLabel& max_label() { return *this->max_label_; }
 
 private:
     Ui::MainWindow *ui;
     MeasurementSystem* measurement_system_;
-    std::shared_ptr<fastEIT::Solver> solver_;
+    Solver* solver_;
     Image* image_;
     cublasHandle_t handle_;
     QTimer* draw_timer_;
     QTime time_;
     QLabel* fps_label_;
+    QLabel* solve_time_label_;
     QLabel* min_label_;
     QLabel* max_label_;
 };

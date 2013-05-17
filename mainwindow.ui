@@ -30,9 +30,6 @@
     <addaction name="actionLoad_Voltage"/>
     <addaction name="actionSave_Voltage"/>
     <addaction name="separator"/>
-    <addaction name="actionStart_Solver"/>
-    <addaction name="actionStop_Solver"/>
-    <addaction name="separator"/>
     <addaction name="actionCalibrate"/>
    </widget>
    <widget class="QMenu" name="menuImage">
