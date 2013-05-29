@@ -14,8 +14,7 @@
 #include "measurementsystem.h"
 
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow) {
+    QMainWindow(parent), ui(new Ui::MainWindow), cuda_stream_(nullptr) {
     ui->setupUi(this);
 
     // create timer
@@ -27,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create measurement system
     this->measurement_system_ = new MeasurementSystem(
-        std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(1, 1, nullptr));
+        std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(1, 1, this->cuda_stream()));
 
     // create status bar
     this->createStatusBar();
@@ -72,7 +71,7 @@ void MainWindow::draw() {
     // check for image
     if (this->image()) {
         // copy data to device
-        this->solver()->measured_voltage()->copyToDevice(nullptr);
+        this->solver()->measured_voltage()->copyToDevice(this->cuda_stream());
 
         // solve
         // auto gamma = this->solver()->solve(this->handle(), NULL);
@@ -118,11 +117,11 @@ void MainWindow::on_actionLoad_Voltage_triggered() {
 
     if (file_name != "") {
         // load matrix
-        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), nullptr);
+        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), this->cuda_stream());
 
         // copy voltage
-        this->solver()->measured_voltage()->copy(voltage, nullptr);
-        this->solver()->measured_voltage()->copyToHost(nullptr);
+        this->solver()->measured_voltage()->copy(voltage, this->cuda_stream());
+        this->solver()->measured_voltage()->copyToHost(this->cuda_stream());
     }
 }
 
@@ -133,8 +132,8 @@ void MainWindow::on_actionSave_Voltage_triggered() {
 
     // save voltage
     if (file_name != "") {
-        this->solver()->measured_voltage()->copyToHost(nullptr);
-        cudaStreamSynchronize(nullptr);
+        this->solver()->measured_voltage()->copyToHost(this->cuda_stream());
+        cudaStreamSynchronize(this->cuda_stream());
         fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage());
     }
 }

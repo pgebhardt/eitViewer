@@ -52,6 +52,7 @@ public:
     QLabel& solve_time_label() { return *this->solve_time_label_; }
     QLabel& min_label() { return *this->min_label_; }
     QLabel& max_label() { return *this->max_label_; }
+    cudaStream_t& cuda_stream() { return cuda_stream_; }
 
 private:
     Ui::MainWindow *ui;
@@ -65,6 +66,7 @@ private:
     QLabel* solve_time_label_;
     QLabel* min_label_;
     QLabel* max_label_;
+    cudaStream_t cuda_stream_;
 };
 
 #endif // MAINWINDOW_H
