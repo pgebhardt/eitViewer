@@ -20,10 +20,10 @@ signals:
 public:
     // accessors
     std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measured_voltage() {
-        return this->fasteit_solver()->measured_voltage();
+        return this->fasteit_solver()->measured_voltage(0);
     }
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> calibration_voltage() {
-        return this->fasteit_solver()->calibration_voltage();
+    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> calculated_voltage() {
+        return this->fasteit_solver()->calculated_voltage(0);
     }
     std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> gamma() {
         return this->fasteit_solver()->gamma();
@@ -31,7 +31,8 @@ public:
     std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> dgamma() {
         return this->fasteit_solver()->dgamma();
     }
-    std::shared_ptr<fastEIT::Solver> fasteit_solver() {
+    std::shared_ptr<fastEIT::solver::Solver<fastEIT::numeric::SparseConjugate,
+        fastEIT::numeric::FastConjugate>> fasteit_solver() {
         return this->fasteit_solver_;
     }
     QThread* thread() { return this->thread_; }
@@ -42,7 +43,8 @@ public:
 
 private:
     // member
-    std::shared_ptr<fastEIT::Solver> fasteit_solver_;
+    std::shared_ptr<fastEIT::solver::Solver<fastEIT::numeric::SparseConjugate,
+        fastEIT::numeric::FastConjugate>> fasteit_solver_;
     QThread* thread_;
     cublasHandle_t handle_;
     QTimer* timer_;

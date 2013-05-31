@@ -69,18 +69,19 @@ Solver::Solver(const QJsonObject& config, QObject *parent) :
                 nullptr);
 
             // create and init solver
-            this->fasteit_solver_ = std::make_shared<fastEIT::Solver>(model,
+            this->fasteit_solver_ = std::make_shared<fastEIT::solver::Solver<
+                    fastEIT::numeric::SparseConjugate, fastEIT::numeric::FastConjugate>>(model, 1,
                 config["solver"].toObject()["regularization_factor"].toDouble(),
                 this->handle(), nullptr);
             this->fasteit_solver()->preSolve(this->handle(), nullptr);
-            this->fasteit_solver()->measured_voltage()->copyToHost(nullptr);
+            this->measured_voltage()->copyToHost(nullptr);
 
             // start solve timer
             this->timer_ = new QTimer();
             connect(this->timer(), &QTimer::timeout, [=]() {
                 this->time().restart();
 
-                auto gamma = this->fasteit_solver()->solve(this->handle(), nullptr);
+                auto gamma = this->fasteit_solver()->solve_differential(this->handle(), nullptr);
                 gamma->copyToHost(nullptr);
 
                 this->solve_time() = this->time().elapsed();

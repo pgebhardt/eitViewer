@@ -70,6 +70,8 @@ void MainWindow::createStatusBar() {
 void MainWindow::draw() {
     // check for image
     if (this->image()) {
+        this->time().restart();
+
         // copy data to device
         this->solver()->measured_voltage()->copyToDevice(this->cuda_stream());
 
@@ -100,9 +102,11 @@ void MainWindow::draw() {
             true);
 
         // calc fps
-        this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
+        // this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
         this->solve_time_label().setText(QString("solve time: %1 ms").arg(this->solver()->solve_time()));
-        this->time().restart();
+        this->solve_time_label().setText(QString("solve time: %1 ms").arg(this->solver()->solve_time()));
+        // this->time().restart();
+        this->fps_label().setText(QString("draw time: %1").arg(this->time().elapsed()));
 
         // update min max label
         this->min_label().setText(QString("min: %1 dB").arg(min_value));
@@ -140,7 +144,7 @@ void MainWindow::on_actionSave_Voltage_triggered() {
 
 void MainWindow::on_actionCalibrate_triggered() {
     // set calibration voltage to current measurment voltage
-    this->solver()->calibration_voltage()->copy(this->solver()->measured_voltage(), NULL);
+    this->solver()->calculated_voltage()->copy(this->solver()->measured_voltage(), NULL);
 }
 
 void MainWindow::on_actionSave_Image_triggered() {
