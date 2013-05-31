@@ -51,6 +51,7 @@ public:
     std::vector<fastEIT::dtype::real>& green() { return this->green_; }
     std::vector<fastEIT::dtype::real>& blue() { return this->blue_; }
     std::vector<fastEIT::dtype::real>& node_area() { return this->node_area_; }
+    std::vector<fastEIT::dtype::real>& element_area() { return this->element_area_; }
     fastEIT::dtype::real& x_angle() { return this->x_angle_; }
     fastEIT::dtype::real& z_angle() { return this->z_angle_; }
     std::tuple<int, int>& old_mouse_pos() { return this->old_mouse_pos_; }
@@ -64,6 +65,7 @@ private:
     std::vector<fastEIT::dtype::real> green_;
     std::vector<fastEIT::dtype::real> blue_;
     std::vector<fastEIT::dtype::real> node_area_;
+    std::vector<fastEIT::dtype::real> element_area_;
     fastEIT::dtype::real x_angle_;
     fastEIT::dtype::real z_angle_;
     std::tuple<int, int> old_mouse_pos_;

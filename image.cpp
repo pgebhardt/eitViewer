@@ -16,59 +16,11 @@ void jet(const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, fa
     }
 }
 
-void calc_node_area(const std::shared_ptr<fastEIT::Mesh> mesh,
-              std::vector<fastEIT::dtype::real>* area) {
-    for (fastEIT::dtype::index element = 0; element < mesh->elements()->rows(); ++element) {
-        auto points = mesh->elementNodes(element);
-
-        for (fastEIT::dtype::index node = 0; node < 3; ++node) {
-            (*area)[std::get<0>(points[node])] += 0.5 * std::abs(
-                (std::get<0>(std::get<1>(points[1])) - std::get<0>(std::get<1>(points[0]))) *
-                (std::get<1>(std::get<1>(points[2])) - std::get<1>(std::get<1>(points[0]))) -
-                (std::get<0>(std::get<1>(points[2])) - std::get<0>(std::get<1>(points[0]))) *
-                (std::get<1>(std::get<1>(points[1])) - std::get<1>(std::get<1>(points[0])))
-                );
-        }
-    }
-}
-
-void calc_z_values(const std::vector<fastEIT::dtype::real>& node_area,
-                  const std::shared_ptr<fastEIT::Mesh> mesh,
-                  const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values,
-                  const fastEIT::dtype::real norm, GLfloat* vertices) {
-    // calc z_values
-    std::vector<fastEIT::dtype::real> z_values(mesh->nodes()->rows());
-    for (fastEIT::dtype::index element = 0; element < mesh->elements()->rows(); ++element) {
-        // get element nodes
-        auto points = mesh->elementNodes(element);
-
-        for (fastEIT::dtype::index node = 0; node < 3; ++node) {
-            z_values[std::get<0>(points[node])] += (*values)(element, 0) * 0.5 * std::abs(
-                (std::get<0>(std::get<1>(points[1])) - std::get<0>(std::get<1>(points[0]))) *
-                (std::get<1>(std::get<1>(points[2])) - std::get<1>(std::get<1>(points[0]))) -
-                (std::get<0>(std::get<1>(points[2])) - std::get<0>(std::get<1>(points[0]))) *
-                (std::get<1>(std::get<1>(points[1])) - std::get<1>(std::get<1>(points[0])))
-                );
-        }
-    }
-
-    // fill vertex buffer
-    for (fastEIT::dtype::index element = 0; element < mesh->elements()->rows(); ++element) {
-        // get element nodes
-        auto points = mesh->elementNodes(element);
-
-        for (fastEIT::dtype::index node = 0; node < 3; ++node) {
-            vertices[element * 3 * 3 + node * 3 + 2] = -z_values[std::get<0>(points[node])] / (node_area[std::get<0>(points[node])] * norm);
-        }
-    }
-}
-
 Image::Image(const std::shared_ptr<fastEIT::model::Model> model, QWidget *parent) :
     QGLWidget(parent), model_(model), red_(model->mesh()->elements()->rows()),
     green_(model->mesh()->elements()->rows()), blue_(model->mesh()->elements()->rows()),
-    node_area_(model->mesh()->elements()->rows()), x_angle_(0.0), z_angle_(0.0),
-    normalization_factor_(1.0) {
-
+    node_area_(model->mesh()->nodes()->rows()), element_area_(model->mesh()->elements()->rows()),
+    x_angle_(0.0), z_angle_(0.0), normalization_factor_(1.0) {
     // create buffer
     this->vertices_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 3];
     this->colors_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 4];
@@ -77,8 +29,26 @@ Image::Image(const std::shared_ptr<fastEIT::model::Model> model, QWidget *parent
     std::fill_n(this->vertices_, model->mesh()->elements()->rows() * 3 * 3, 0.0);
     std::fill_n(this->colors_, model->mesh()->elements()->rows() * 3 * 4, 1.0);
 
-    // calc node area
-    calc_node_area(model->mesh(), &this->node_area());
+    // calc node and element area
+    for (fastEIT::dtype::index element = 0; element < model->mesh()->elements()->rows(); ++element) {
+        auto points = model->mesh()->elementNodes(element);
+
+        this->element_area()[element] = 0.5 * std::abs(
+            (std::get<0>(std::get<1>(points[1])) - std::get<0>(std::get<1>(points[0]))) *
+            (std::get<1>(std::get<1>(points[2])) - std::get<1>(std::get<1>(points[0]))) -
+            (std::get<0>(std::get<1>(points[2])) - std::get<0>(std::get<1>(points[0]))) *
+            (std::get<1>(std::get<1>(points[1])) - std::get<1>(std::get<1>(points[0])))
+            );
+
+        for (fastEIT::dtype::index node = 0; node < 3; ++node) {
+            this->node_area()[std::get<0>(points[node])] += 0.5 * std::abs(
+                (std::get<0>(std::get<1>(points[1])) - std::get<0>(std::get<1>(points[0]))) *
+                (std::get<1>(std::get<1>(points[2])) - std::get<1>(std::get<1>(points[0]))) -
+                (std::get<0>(std::get<1>(points[2])) - std::get<0>(std::get<1>(points[0]))) *
+                (std::get<1>(std::get<1>(points[1])) - std::get<1>(std::get<1>(points[0])))
+                );
+        }
+    }
 
     // fill vertex buffer
     for (fastEIT::dtype::index element = 0; element < model->mesh()->elements()->rows(); ++element) {
@@ -157,7 +127,22 @@ std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
     }
 
     // calc z_values
-    calc_z_values(this->node_area(), this->model()->mesh(), values, norm, this->vertices_);
+    std::vector<fastEIT::dtype::real> z_values(this->model()->mesh()->nodes()->rows());
+    for (fastEIT::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
+        for (fastEIT::dtype::index node = 0; node < 3; ++node) {
+            z_values[(*this->model()->mesh()->elements())(element, node)] +=
+                (*values)(element, 0) * this->element_area()[element];
+        }
+    }
+
+    // fill vertex buffer
+    for (fastEIT::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
+        for (fastEIT::dtype::index node = 0; node < 3; ++node) {
+            this->vertices_[element * 3 * 3 + node * 3 + 2] =
+                -z_values[(*this->model()->mesh()->elements())(element, node)] /
+                    (this->node_area()[(*this->model()->mesh()->elements())(element, node)] * norm);
+        }
+    }
 
     // redraw
     this->updateGL();
