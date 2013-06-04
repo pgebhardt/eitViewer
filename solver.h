@@ -40,7 +40,7 @@ public:
         return this->fasteit_solver_;
     }
     QThread* thread() { return this->thread_; }
-    QTimer* timer() { return this->timer_; }
+    QTimer* solve_timer() { return this->solve_timer_; }
     QTime& time() { return this->time_; }
     int& solve_time() { return this->solve_time_; }
     const cudaStream_t& cuda_stream() { return this->cuda_stream_; }
@@ -52,7 +52,7 @@ private:
     std::shared_ptr<fastEIT::solver::Solver<fastEIT::numeric::SparseConjugate,
         fastEIT::numeric::FastConjugate>> fasteit_solver_;
     QThread* thread_;
-    QTimer* timer_;
+    QTimer* solve_timer_;
     QTime time_;
     int solve_time_;
     cudaStream_t cuda_stream_;

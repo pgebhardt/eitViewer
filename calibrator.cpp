@@ -3,10 +3,14 @@
 Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
     int cuda_device, QObject *parent)
     : Solver(config, cuda_device, parent), differential_solver_(differential_solver) {
+    connect(this, &Calibrator::initialized, [=](bool) {
+        std::cout << "Bin hier!" << std::endl;
+        this->solve_timer()->start(500);
+    });
 }
 
 void Calibrator::solve() {
-    this->time().restart();
+    // this->time().restart();
 
     this->measured_voltage()->copy(this->differential_solver()->measured_voltage(),
         this->cuda_stream());
@@ -16,4 +20,5 @@ void Calibrator::solve() {
         this->cuda_stream());
 
     this->solve_time() = this->time().elapsed();
+    this->time().restart();
 }

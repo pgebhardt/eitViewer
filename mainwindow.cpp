@@ -14,7 +14,8 @@
 #include "measurementsystem.h"
 
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent), ui(new Ui::MainWindow), calibrator_(nullptr) {
+    QMainWindow(parent), ui(new Ui::MainWindow), measurement_system_(nullptr),
+    solver_(nullptr), calibrator_(nullptr) {
     ui->setupUi(this);
 
     // enable peer access for 2 gpus
@@ -106,8 +107,10 @@ void MainWindow::draw() {
         // calc fps
         this->solve_time_label().setText(
             QString("solve time: %1 ms").arg(this->solver()->solve_time()));
-        this->calibrate_time_label().setText(
-            QString("calibrate time: %1 ms").arg(this->calibrator()->solve_time()));
+        if (this->calibrator()) {
+            this->calibrate_time_label().setText(
+                QString("calibrate time: %1 ms").arg(this->calibrator()->solve_time()));
+        }
 
         // update min max label
         this->min_label().setText(QString("min: %1 dB").arg(min_value));

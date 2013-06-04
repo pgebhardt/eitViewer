@@ -78,9 +78,9 @@ Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
             this->measured_voltage()->copyToHost(this->cuda_stream());
 
             // start solve timer
-            this->timer_ = new QTimer();
-            connect(this->timer(), &QTimer::timeout, this, &Solver::solve);
-            this->timer()->start(10);
+            this->solve_timer_ = new QTimer();
+            connect(this->solve_timer(), &QTimer::timeout, this, &Solver::solve);
+            this->solve_timer()->start(10);
 
         } catch (const std::exception& e) {
             success = false;
