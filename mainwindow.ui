@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuSolver">
@@ -31,6 +31,7 @@
     <addaction name="actionSave_Voltage"/>
     <addaction name="separator"/>
     <addaction name="actionCalibrate"/>
+    <addaction name="actionAuto_Calibrate"/>
    </widget>
    <widget class="QMenu" name="menuImage">
     <property name="title">
@@ -136,6 +137,17 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionAuto_Calibrate">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Auto Calibrate</string>
    </property>
   </action>
  </widget>

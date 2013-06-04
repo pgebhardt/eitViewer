@@ -36,6 +36,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create status bar
     this->createStatusBar();
+
+    // enable auto calibrator menu items
+    if (this->hasMultiGPU()) {
+        this->ui->actionAuto_Calibrate->setEnabled(true);
+    }
 }
 
 MainWindow::~MainWindow() {
@@ -148,6 +153,10 @@ void MainWindow::on_actionCalibrate_triggered() {
     this->solver()->calculated_voltage()->copy(this->solver()->measured_voltage(), nullptr);
 }
 
+void MainWindow::on_actionAuto_Calibrate_toggled(bool arg1) {
+    this->calibrator()->running() = arg1;
+}
+
 void MainWindow::on_actionSave_Image_triggered() {
     // check for image
     if (this->image()) {
@@ -219,4 +228,3 @@ void MainWindow::solver_initialized(bool success) {
             tr("Cannot load solver from config!"));
     }
 }
-

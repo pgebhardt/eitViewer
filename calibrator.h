@@ -15,10 +15,12 @@ protected slots:
 public:
     // accessor
     Solver* differential_solver() { return this->differential_solver_; }
+    bool& running() { return this->running_; }
 
 private:
     // member
     Solver* differential_solver_;
+    bool running_;
 };
 
 #endif // CALIBRATOR_H

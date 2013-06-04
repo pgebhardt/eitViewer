@@ -32,6 +32,8 @@ private slots:
     void on_actionOpen_triggered();
     void solver_initialized(bool success);
 
+    void on_actionAuto_Calibrate_toggled(bool arg1);
+
 protected:
     void createStatusBar();
     bool hasMultiGPU() { int devCount = 0; cudaGetDeviceCount(&devCount); return devCount > 1; }
