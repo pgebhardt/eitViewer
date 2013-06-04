@@ -9,6 +9,7 @@
 #include "image.h"
 #include "measurementsystem.h"
 #include "solver.h"
+#include "calibrator.h"
 
 namespace Ui {
 class MainWindow;
@@ -39,11 +40,11 @@ public:
     // accessor
     MeasurementSystem* measurement_system() { return this->measurement_system_; }
     Solver* solver() { return this->solver_; }
+    Calibrator* calibrator() { return this->calibrator_; }
     Image* image() { return this->image_; }
     QTimer& draw_timer() { return *this->draw_timer_; }
-    QTime& time() { return this->time_; }
-    QLabel& fps_label() { return *this->fps_label_; }
     QLabel& solve_time_label() { return *this->solve_time_label_; }
+    QLabel& calibrate_time_label() { return *this->calibrate_time_label_; }
     QLabel& min_label() { return *this->min_label_; }
     QLabel& max_label() { return *this->max_label_; }
 
@@ -51,11 +52,11 @@ private:
     Ui::MainWindow *ui;
     MeasurementSystem* measurement_system_;
     Solver* solver_;
+    Calibrator* calibrator_;
     Image* image_;
     QTimer* draw_timer_;
-    QTime time_;
-    QLabel* fps_label_;
     QLabel* solve_time_label_;
+    QLabel* calibrate_time_label_;
     QLabel* min_label_;
     QLabel* max_label_;
 };

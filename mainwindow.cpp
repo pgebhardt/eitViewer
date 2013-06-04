@@ -14,8 +14,16 @@
 #include "measurementsystem.h"
 
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent), ui(new Ui::MainWindow) {
+    QMainWindow(parent), ui(new Ui::MainWindow), calibrator_(nullptr) {
     ui->setupUi(this);
+
+    // enable peer access for 2 gpus
+    if (this->hasMultiGPU()) {
+        cudaDeviceEnablePeerAccess(1, 0);
+        cudaSetDevice(1);
+        cudaDeviceEnablePeerAccess(0, 0);
+        cudaSetDevice(0);
+    }
 
     // create timer
     this->draw_timer_ = new QTimer(this);
@@ -37,6 +45,10 @@ MainWindow::~MainWindow() {
         this->measurement_system()->thread()->quit();
         this->measurement_system()->thread()->wait();
     }
+    if (this->calibrator()) {
+        this->calibrator()->thread()->quit();
+        this->calibrator()->thread()->wait();
+    }
     if (this->solver()) {
         this->solver()->thread()->quit();
         this->solver()->thread()->wait();
@@ -45,20 +57,20 @@ MainWindow::~MainWindow() {
 
 void MainWindow::createStatusBar() {
     // create label
-    this->fps_label_ = new QLabel("fps:", this);
     this->solve_time_label_ = new QLabel("solve time:", this);
+    this->calibrate_time_label_ = new QLabel("calibrate time:", this);
     this->min_label_ = new QLabel("min:", this);
     this->max_label_ = new QLabel("max:", this);
 
     // set frame style
-    this->fps_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
     this->solve_time_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
+    this->calibrate_time_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
     this->min_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
     this->max_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
 
     // fill status bar
-    this->statusBar()->addPermanentWidget(&this->fps_label(), 1);
     this->statusBar()->addPermanentWidget(&this->solve_time_label(), 1);
+    this->statusBar()->addPermanentWidget(&this->calibrate_time_label(), 1);
     this->statusBar()->addPermanentWidget(&this->min_label(), 1);
     this->statusBar()->addPermanentWidget(&this->max_label(), 1);
 }
@@ -67,7 +79,7 @@ void MainWindow::draw() {
     // check for image
     if (this->image()) {
         // solve
-        auto gamma = this->solver()->fasteit_solver()->dgamma();
+        auto gamma = this->solver()->dgamma();
 
         // cut values
         if (!this->ui->actionShow_Negative_Values->isChecked()) {
@@ -92,10 +104,10 @@ void MainWindow::draw() {
             true);
 
         // calc fps
-        this->fps_label().setText(QString("fps: %1").arg(1e3 / this->time().elapsed()));
-        this->solve_time_label().setText(QString("solve time: %1 ms").arg(this->solver()->solve_time()));
-        this->solve_time_label().setText(QString("solve time: %1 ms").arg(this->solver()->solve_time()));
-        this->time().restart();
+        this->solve_time_label().setText(
+            QString("solve time: %1 ms").arg(this->solver()->solve_time()));
+        this->calibrate_time_label().setText(
+            QString("calibrate time: %1 ms").arg(this->calibrator()->solve_time()));
 
         // update min max label
         this->min_label().setText(QString("min: %1 dB").arg(min_value));
@@ -170,6 +182,13 @@ void MainWindow::on_actionOpen_triggered() {
         // create new Solver from config
         this->solver_ = new Solver(config, 0);
         connect(this->solver_, &Solver::initialized, this, &MainWindow::solver_initialized);
+
+        // create auto calibrator
+        if (this->hasMultiGPU()) {
+            this->calibrator_ = new Calibrator(this->solver(), config, 1);
+        } else {
+            this->calibrator_ = nullptr;
+        }
 
         file.close();
     }
