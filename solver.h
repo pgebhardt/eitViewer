@@ -12,10 +12,14 @@
 class Solver : public QObject {
     Q_OBJECT
 public:
-    explicit Solver(const QJsonObject& config, QObject* parent=nullptr);
+    explicit Solver(const QJsonObject& config, int cuda_device=0,
+        QObject* parent=nullptr);
 
 signals:
     void initialized(bool success);
+
+protected slots:
+    virtual void solve();
 
 public:
     // accessors
@@ -36,20 +40,24 @@ public:
         return this->fasteit_solver_;
     }
     QThread* thread() { return this->thread_; }
-    cublasHandle_t handle() { return this->handle_; }
     QTimer* timer() { return this->timer_; }
     QTime& time() { return this->time_; }
     int& solve_time() { return this->solve_time_; }
+    const cudaStream_t& cuda_stream() { return this->cuda_stream_; }
+    const cublasHandle_t& cublas_handle() { return this->cublas_handle_; }
+    int cuda_device() { return this->cuda_device_; }
 
 private:
     // member
     std::shared_ptr<fastEIT::solver::Solver<fastEIT::numeric::SparseConjugate,
         fastEIT::numeric::FastConjugate>> fasteit_solver_;
     QThread* thread_;
-    cublasHandle_t handle_;
     QTimer* timer_;
     QTime time_;
     int solve_time_;
+    cudaStream_t cuda_stream_;
+    cublasHandle_t cublas_handle_;
+    int cuda_device_;
 };
 
 #endif // SOLVER_H

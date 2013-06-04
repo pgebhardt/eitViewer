@@ -41,4 +41,5 @@ void MeasurementSystem::readyRead() {
             (*this->measurement())(i, (fastEIT::dtype::index)excitation) = data;
         }
     }
+    this->measurement()->copyToDevice(nullptr);
 }

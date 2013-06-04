@@ -23,23 +23,17 @@ public:
     
 private slots:
     void draw();
-
     void on_actionLoad_Voltage_triggered();
-
     void on_actionCalibrate_triggered();
-
     void on_actionSave_Image_triggered();
-
     void on_actionSave_Voltage_triggered();
-
     void on_actionExit_triggered();
-
     void on_actionOpen_triggered();
-
-    void on_solver_initialized(bool success);
+    void solver_initialized(bool success);
 
 protected:
     void createStatusBar();
+    bool hasMultiGPU() { int devCount = 0; cudaGetDeviceCount(&devCount); return devCount > 1; }
 
 public:
     // accessor
@@ -52,21 +46,18 @@ public:
     QLabel& solve_time_label() { return *this->solve_time_label_; }
     QLabel& min_label() { return *this->min_label_; }
     QLabel& max_label() { return *this->max_label_; }
-    cudaStream_t& cuda_stream() { return cuda_stream_; }
 
 private:
     Ui::MainWindow *ui;
     MeasurementSystem* measurement_system_;
     Solver* solver_;
     Image* image_;
-    cublasHandle_t handle_;
     QTimer* draw_timer_;
     QTime time_;
     QLabel* fps_label_;
     QLabel* solve_time_label_;
     QLabel* min_label_;
     QLabel* max_label_;
-    cudaStream_t cuda_stream_;
 };
 
 #endif // MAINWINDOW_H

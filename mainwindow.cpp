@@ -14,19 +14,16 @@
 #include "measurementsystem.h"
 
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent), ui(new Ui::MainWindow), cuda_stream_(nullptr) {
+    QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
     // create timer
     this->draw_timer_ = new QTimer(this);
     connect(this->draw_timer_, &QTimer::timeout, this, &MainWindow::draw);
 
-    // create cublas handle
-    cublasCreate(&this->handle_);
-
     // create measurement system
     this->measurement_system_ = new MeasurementSystem(
-        std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(1, 1, this->cuda_stream()));
+        std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(1, 1, nullptr));
 
     // create status bar
     this->createStatusBar();
@@ -34,7 +31,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow() {
     delete this->ui;
-    cublasDestroy(this->handle_);
 
     // stop threads
     if (this->measurement_system()) {
@@ -70,11 +66,7 @@ void MainWindow::createStatusBar() {
 void MainWindow::draw() {
     // check for image
     if (this->image()) {
-        // copy data to device
-        this->solver()->measured_voltage()->copyToDevice(this->cuda_stream());
-
         // solve
-        // auto gamma = this->solver()->solve(this->handle(), NULL);
         auto gamma = this->solver()->fasteit_solver()->dgamma();
 
         // cut values
@@ -118,11 +110,8 @@ void MainWindow::on_actionLoad_Voltage_triggered() {
 
     if (file_name != "") {
         // load matrix
-        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), this->cuda_stream());
-
-        // copy voltage
-        this->solver()->measured_voltage()->copy(voltage, this->cuda_stream());
-        this->solver()->measured_voltage()->copyToHost(this->cuda_stream());
+        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), nullptr);
+        this->solver()->measured_voltage()->copy(voltage, nullptr);
     }
 }
 
@@ -133,15 +122,15 @@ void MainWindow::on_actionSave_Voltage_triggered() {
 
     // save voltage
     if (file_name != "") {
-        this->solver()->measured_voltage()->copyToHost(this->cuda_stream());
-        cudaStreamSynchronize(this->cuda_stream());
+        this->solver()->measured_voltage()->copyToHost(nullptr);
+        cudaStreamSynchronize(nullptr);
         fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage());
     }
 }
 
 void MainWindow::on_actionCalibrate_triggered() {
     // set calibration voltage to current measurment voltage
-    this->solver()->calculated_voltage()->copy(this->solver()->measured_voltage(), NULL);
+    this->solver()->calculated_voltage()->copy(this->solver()->measured_voltage(), nullptr);
 }
 
 void MainWindow::on_actionSave_Image_triggered() {
@@ -179,8 +168,8 @@ void MainWindow::on_actionOpen_triggered() {
         auto config = json_document.object();
 
         // create new Solver from config
-        this->solver_ = new Solver(config);
-        connect(this->solver_, &Solver::initialized, this, &MainWindow::on_solver_initialized);
+        this->solver_ = new Solver(config, 0);
+        connect(this->solver_, &Solver::initialized, this, &MainWindow::solver_initialized);
 
         file.close();
     }
@@ -191,7 +180,7 @@ void MainWindow::on_actionExit_triggered() {
     this->close();
 }
 
-void MainWindow::on_solver_initialized(bool success) {
+void MainWindow::solver_initialized(bool success) {
     if (success) {
         // create image
         this->image_ = new Image(this->solver()->fasteit_solver()->model());
