@@ -97,8 +97,8 @@ Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
 void Solver::solve() {
     this->time().restart();
 
-    auto gamma = this->fasteit_solver()->solve_differential(this->cublas_handle(), this->cuda_stream());
-    gamma->copyToHost(this->cuda_stream());
+    this->fasteit_solver()->solve_differential(this->cublas_handle(),
+        this->cuda_stream())->copyToHost(this->cuda_stream());
 
     this->solve_time() = this->time().elapsed();
 }

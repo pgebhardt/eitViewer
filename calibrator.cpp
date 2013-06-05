@@ -5,8 +5,11 @@ Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
     : Solver(config, cuda_device, parent), differential_solver_(differential_solver),
     running_(false) {
     connect(this, &Calibrator::initialized, [=](bool) {
-        std::cout << "Bin hier!" << std::endl;
+        // start timer
         this->solve_timer()->start(500);
+
+        // set regularization factor
+        this->fasteit_solver()->inverse_solver()->regularization_factor() = 1e5;
     });
 }
 
