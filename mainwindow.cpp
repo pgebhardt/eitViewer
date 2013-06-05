@@ -86,27 +86,14 @@ void MainWindow::draw() {
     if (this->image()) {
         // solve
         auto gamma = this->solver()->dgamma();
-
-        // cut values
-        if (!this->ui->actionShow_Negative_Values->isChecked()) {
-            for (fastEIT::dtype::index element = 0; element < gamma->rows(); ++element) {
-                if ((*gamma)(element, 0) < 0.0) {
-                    (*gamma)(element, 0) = 0.0;
-                }
-            }
-        }
-        if (!this->ui->actionShow_Positive_Values->isChecked()) {
-            for (fastEIT::dtype::index element = 0; element < gamma->rows(); ++element) {
-                if ((*gamma)(element, 0) > 0.0) {
-                    (*gamma)(element, 0) = 0.0;
-                }
-            }
+        if (this->ui->actionCalibrator_Image->isChecked()) {
+            gamma = this->calibrator()->gamma();
         }
 
         // update image
         fastEIT::dtype::real min_value, max_value;
         std::tie(min_value, max_value) = this->image()->draw(gamma,
-            this->ui->actionShow_Transparent_Values->isChecked(),
+            this->ui->actionTransparent_Values->isChecked(),
             true);
 
         // calc fps
@@ -193,7 +180,7 @@ void MainWindow::on_actionOpen_triggered() {
 
         // create new Solver from config
         this->solver_ = new Solver(config, 0);
-        connect(this->solver_, &Solver::initialized, this, &MainWindow::solver_initialized);
+        connect(this->solver(), &Solver::initialized, this, &MainWindow::solver_initialized);
 
         // create auto calibrator
         if (this->hasMultiGPU()) {
@@ -216,7 +203,7 @@ void MainWindow::solver_initialized(bool success) {
         // create image
         this->image_ = new Image(this->solver()->fasteit_solver()->model());
         this->image()->draw(this->solver()->fasteit_solver()->dgamma(),
-            this->ui->actionShow_Transparent_Values->isChecked(),
+            this->ui->actionTransparent_Values->isChecked(),
             true);
         this->setCentralWidget(this->image());
         this->draw_timer().start(20);

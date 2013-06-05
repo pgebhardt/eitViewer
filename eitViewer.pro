@@ -14,13 +14,15 @@ SOURCES += main.cpp\
     image.cpp \
     measurementsystem.cpp \
     solver.cpp \
-    calibrator.cpp
+    calibrator.cpp \
+    firfilter.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
     measurementsystem.h \
     solver.h \
-    calibrator.h
+    calibrator.h \
+    firfilter.h
 
 FORMS    += mainwindow.ui
 

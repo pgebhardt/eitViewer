@@ -26,13 +26,12 @@ private slots:
     void draw();
     void on_actionLoad_Voltage_triggered();
     void on_actionCalibrate_triggered();
+    void on_actionAuto_Calibrate_toggled(bool arg1);
     void on_actionSave_Image_triggered();
     void on_actionSave_Voltage_triggered();
     void on_actionExit_triggered();
     void on_actionOpen_triggered();
     void solver_initialized(bool success);
-
-    void on_actionAuto_Calibrate_toggled(bool arg1);
 
 protected:
     void createStatusBar();
