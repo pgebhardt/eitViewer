@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>21</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuSolver">
@@ -38,8 +38,8 @@
     <property name="title">
      <string>View</string>
     </property>
-    <addaction name="actionTransparent_Values"/>
-    <addaction name="actionCalibrator_Image"/>
+    <addaction name="actionAuto_Normalize"/>
+    <addaction name="actionCalibrator_Data"/>
     <addaction name="actionSave_Image"/>
    </widget>
    <widget class="QMenu" name="menuFile">
@@ -85,15 +85,15 @@
     <string>Save Image</string>
    </property>
   </action>
-  <action name="actionTransparent_Values">
+  <action name="actionAuto_Normalize">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
-    <string>Transparent Values</string>
+    <string>Auto Normalize</string>
    </property>
   </action>
   <action name="actionNegative_Values">
@@ -152,12 +152,12 @@
     <string>Auto Calibrate</string>
    </property>
   </action>
-  <action name="actionCalibrator_Image">
+  <action name="actionCalibrator_Data">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Calibrator Image</string>
+    <string>Calibrator Data</string>
    </property>
   </action>
   <action name="actionCalibrator_Settings">

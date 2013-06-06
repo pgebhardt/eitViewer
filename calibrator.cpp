@@ -13,14 +13,14 @@ Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
             // reset timer
             this->restart((int)config["calibrator"].toObject()["step_size"].toDouble());
         }
-        std::cout << "calibrator thread: " << QThread::currentThreadId() << std::endl;
     });
 
-    connect(this->differential_solver(), &Solver::initialized, [=]() {
-        QMetaObject::invokeMethod(this, "init_filter", Qt::AutoConnection,
-            Q_ARG(int, (int)config["calibrator"].toObject()["filter_order"].toDouble()),
-            Q_ARG(int, (int)config["calibrator"].toObject()["filter_step_size"].toDouble()));
-        std::cout << "solver thread: " << QThread::currentThreadId() << std::endl;
+    connect(this->differential_solver(), &Solver::initialized, [=](bool success) {
+        if (success) {
+            QMetaObject::invokeMethod(this, "init_filter", Qt::AutoConnection,
+                Q_ARG(int, (int)config["calibrator"].toObject()["filter_order"].toDouble()),
+                Q_ARG(int, (int)config["calibrator"].toObject()["filter_step_size"].toDouble()));
+        }
     });
 }
 
@@ -34,7 +34,6 @@ Calibrator::~Calibrator() {
 void Calibrator::init_filter(int order, int step_size) {
     this->filter_ = new FIRFilter(order, step_size, this->cuda_device(),
         this->differential_solver()->measured_voltage());
-    std::cout << "calibrator thread: " << QThread::currentThreadId() << std::endl;
 }
 
 void Calibrator::solve() {

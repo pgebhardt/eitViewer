@@ -70,8 +70,7 @@ Image::~Image() {
 }
 
 std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
-    const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool transparent,
-    bool normalized) {
+    const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool normalized) {
     // min and max values
     fastEIT::dtype::real min_value = 0.0;
     fastEIT::dtype::real max_value = 0.0;
@@ -110,19 +109,6 @@ std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
         this->colors_[element * 3 * 4 + 1 * 4 + 2] =
         this->colors_[element * 3 * 4 + 2 * 4 + 2] =
             this->blue()[element];
-
-        // calc alpha
-        if (transparent) {
-            this->colors_[element * 3 * 4 + 0 * 4 + 3] =
-            this->colors_[element * 3 * 4 + 1 * 4 + 3] =
-            this->colors_[element * 3 * 4 + 2 * 4 + 3] =
-                std::abs((*values)(element, 0) / norm);
-        } else {
-            this->colors_[element * 3 * 4 + 0 * 4 + 3] =
-            this->colors_[element * 3 * 4 + 1 * 4 + 3] =
-            this->colors_[element * 3 * 4 + 2 * 4 + 3] =
-                1.0;
-        }
     }
 
     // calc z_values

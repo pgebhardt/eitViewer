@@ -12,8 +12,8 @@ public:
     virtual ~Calibrator();
 
 protected slots:
-    virtual void solve();
     void init_filter(int order, int step_size);
+    virtual void solve();
 
 public:
     // accessor

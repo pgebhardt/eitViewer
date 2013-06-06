@@ -20,8 +20,7 @@ public slots:
 
 public:
     std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> draw(
-        const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool transparent,
-        bool normalized);
+        const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool normalized);
 
 protected:
     virtual void initializeGL();

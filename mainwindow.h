@@ -33,6 +33,7 @@ private slots:
     void on_actionCalibrator_Settings_triggered();
     void on_actionSave_Image_triggered();
     void solver_initialized(bool success);
+    void calibrator_initialized(bool success);
 
 protected:
     void createStatusBar();

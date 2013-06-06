@@ -99,15 +99,14 @@ void MainWindow::draw() {
     if (this->image()) {
         // solve
         auto gamma = this->solver()->dgamma();
-        if (this->ui->actionCalibrator_Image->isChecked()) {
+        if (this->ui->actionCalibrator_Data->isChecked()) {
             gamma = this->calibrator()->gamma();
         }
 
         // update image
         fastEIT::dtype::real min_value, max_value;
         std::tie(min_value, max_value) = this->image()->draw(gamma,
-            this->ui->actionTransparent_Values->isChecked(),
-            true);
+            this->ui->actionAuto_Normalize->isChecked());
 
         // calc fps
         this->solve_time_label().setText(
@@ -153,8 +152,8 @@ void MainWindow::on_actionOpen_triggered() {
         // create auto calibrator
         if (this->hasMultiGPU()) {
             this->calibrator_ = new Calibrator(this->solver(), config, 1);
-        } else {
-            this->calibrator_ = nullptr;
+            connect(this->solver(), &Calibrator::initialized, this,
+                &MainWindow::calibrator_initialized);
         }
 
         file.close();
@@ -174,8 +173,12 @@ void MainWindow::on_actionLoad_Voltage_triggered() {
 
         if (file_name != "") {
             // load matrix
-            auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), nullptr);
-            this->solver()->measured_voltage()->copy(voltage, nullptr);
+            try {
+                auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), nullptr);
+                this->solver()->measured_voltage()->copy(voltage, nullptr);
+            } catch(const std::exception&) {
+                QMessageBox::information(this, this->windowTitle(), "Cannot load voltage matrix!");
+            }
         }
     }
 }
@@ -237,8 +240,7 @@ void MainWindow::solver_initialized(bool success) {
         // create image
         this->image_ = new Image(this->solver()->fasteit_solver()->model(), this);
         this->image()->draw(this->solver()->fasteit_solver()->dgamma(),
-            this->ui->actionTransparent_Values->isChecked(),
-            true);
+            this->ui->actionAuto_Normalize->isChecked());
         this->setCentralWidget(this->image());
         this->draw_timer().start(20);
 
@@ -247,5 +249,12 @@ void MainWindow::solver_initialized(bool success) {
     } else {
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot load solver from config!"));
+    }
+}
+
+void MainWindow::calibrator_initialized(bool success) {
+    if (!success) {
+        QMessageBox::information(this, this->windowTitle(),
+            tr("Cannot create calibrator!"));
     }
 }
