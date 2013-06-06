@@ -46,19 +46,15 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow() {
     delete this->ui;
 
-    // stop threads
+    // cleanup measurement system
     if (this->measurement_system()) {
         this->measurement_system()->thread()->quit();
         this->measurement_system()->thread()->wait();
+        delete this->measurement_system();
     }
-    if (this->calibrator()) {
-        this->calibrator()->thread()->quit();
-        this->calibrator()->thread()->wait();
-    }
-    if (this->solver()) {
-        this->solver()->thread()->quit();
-        this->solver()->thread()->wait();
-    }
+
+    // cleanup solver
+    this->cleanupSolver();
 }
 
 void MainWindow::createStatusBar() {
@@ -79,6 +75,21 @@ void MainWindow::createStatusBar() {
     this->statusBar()->addPermanentWidget(&this->calibrate_time_label(), 1);
     this->statusBar()->addPermanentWidget(&this->min_label(), 1);
     this->statusBar()->addPermanentWidget(&this->max_label(), 1);
+}
+
+void MainWindow::cleanupSolver() {
+    if (this->calibrator()) {
+        this->calibrator()->thread()->quit();
+        this->calibrator()->thread()->wait();
+        delete this->calibrator();
+        this->calibrator_ = nullptr;
+    }
+    if (this->solver()) {
+        this->solver()->thread()->quit();
+        this->solver()->thread()->wait();
+        delete this->solver();
+        this->solver_ = nullptr;
+    }
 }
 
 void MainWindow::draw() {
@@ -168,6 +179,12 @@ void MainWindow::on_actionOpen_triggered() {
 
     // load solver
     if (file_name != "") {
+        // stop drawing image
+        this->draw_timer().stop();
+
+        // cleanup old solver
+        this->cleanupSolver();
+
         // open file
         QFile file(file_name);
         file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -201,7 +218,7 @@ void MainWindow::on_actionExit_triggered() {
 void MainWindow::solver_initialized(bool success) {
     if (success) {
         // create image
-        this->image_ = new Image(this->solver()->fasteit_solver()->model());
+        this->image_ = new Image(this->solver()->fasteit_solver()->model(), this);
         this->image()->draw(this->solver()->fasteit_solver()->dgamma(),
             this->ui->actionTransparent_Values->isChecked(),
             true);

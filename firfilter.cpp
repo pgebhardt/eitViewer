@@ -5,7 +5,7 @@ FIRFilter::FIRFilter(unsigned int order, unsigned int time_step_size, int cuda_d
     QObject(parent), thread_(nullptr), timer_(nullptr), cuda_stream_(nullptr),
     input_(input), calc_array_(nullptr), output_(nullptr), order_(order), ring_buffer_pos_(0) {
     // init separate thread for execution of filter
-    this->thread_ = new QThread();
+    this->thread_ = new QThread(this);
     this->moveToThread(this->thread());
 
     connect(this->thread(), &QThread::started, [=]() {
@@ -31,7 +31,7 @@ FIRFilter::FIRFilter(unsigned int order, unsigned int time_step_size, int cuda_d
             this->input()->rows(), this->input()->columns(), this->cuda_stream());
 
         // create timer for timing filter execution
-        this->timer_ = new QTimer();
+        this->timer_ = new QTimer(this);
         connect(this->timer(), &QTimer::timeout, this, &FIRFilter::calc_filter);
         this->timer()->start(time_step_size);
 

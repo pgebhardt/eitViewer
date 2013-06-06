@@ -36,6 +36,7 @@ private slots:
 protected:
     void createStatusBar();
     bool hasMultiGPU() { int devCount = 0; cudaGetDeviceCount(&devCount); return devCount > 1; }
+    void cleanupSolver();
 
 public:
     // accessor

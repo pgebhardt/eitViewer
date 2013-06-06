@@ -5,15 +5,11 @@ MeasurementSystem::MeasurementSystem(std::shared_ptr<fastEIT::Matrix<fastEIT::dt
     QObject* parent) :
     QObject(parent), measurement_system_socket_(nullptr), measurement_(measurement) {
     // create separat thread
-    this->thread_ = new QThread();
+    this->thread_ = new QThread(this);
     connect(this->thread(), SIGNAL(started()), this, SLOT(init()));
     this->moveToThread(this->thread());
 
     this->thread()->start();
-}
-
-MeasurementSystem::~MeasurementSystem() {
-
 }
 
 void MeasurementSystem::init() {
