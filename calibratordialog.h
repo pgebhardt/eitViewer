@@ -2,6 +2,7 @@
 #define CALIBRATORDIALOG_H
 
 #include <QDialog>
+#include "calibrator.h"
 
 namespace Ui {
 class CalibratorDialog;
@@ -12,7 +13,7 @@ class CalibratorDialog : public QDialog
     Q_OBJECT
     
 public:
-    explicit CalibratorDialog(QWidget *parent = 0);
+    explicit CalibratorDialog(Calibrator* calibrator, QWidget* parent=nullptr);
     ~CalibratorDialog();
     
 private:

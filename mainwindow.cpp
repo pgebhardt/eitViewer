@@ -201,8 +201,10 @@ void MainWindow::on_actionAuto_Calibrate_toggled(bool arg1) {
 }
 
 void MainWindow::on_actionCalibrator_Settings_triggered() {
-    CalibratorDialog dialog(this);
-    dialog.exec();
+    if (this->calibrator()) {
+        CalibratorDialog dialog(this->calibrator(), this);
+        dialog.exec();
+    }
 }
 
 void MainWindow::on_actionSave_Image_triggered() {

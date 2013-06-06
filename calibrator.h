@@ -10,7 +10,7 @@ public:
     explicit Calibrator(Solver* differential_solver, const QJsonObject& config,
         int cuda_device=0, QObject* parent=nullptr);
     virtual ~Calibrator();
-    
+
 protected slots:
     virtual void solve();
     void init_filter(bool success);

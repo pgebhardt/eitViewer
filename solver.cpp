@@ -16,7 +16,8 @@ std::shared_ptr<fastEIT::Matrix<type>> matrixFromJsonArray(const QJsonArray& arr
 }
 
 Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
-    QObject(parent), cuda_stream_(nullptr), cublas_handle_(nullptr), cuda_device_(cuda_device) {
+    QObject(parent), cuda_stream_(nullptr), cublas_handle_(nullptr), cuda_device_(cuda_device),
+    step_size_(20) {
     // init separate thread
     this->thread_ = new QThread(this);
     this->moveToThread(this->thread());
@@ -80,7 +81,7 @@ Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
             // start solve timer
             this->solve_timer_ = new QTimer(this);
             connect(this->solve_timer(), &QTimer::timeout, this, &Solver::solve);
-            this->solve_timer()->start(20);
+            this->restart(20);
 
         } catch (const std::exception& e) {
             success = false;
@@ -92,6 +93,11 @@ Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
 
     // start thread
     this->thread()->start();
+}
+
+void Solver::restart(int step_size) {
+    this->step_size_ = step_size;
+    this->solve_timer()->start(this->step_size());
 }
 
 void Solver::solve() {

@@ -11,8 +11,7 @@ Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
                 config["calibrator"].toObject()["regularization_factor"].toDouble();
 
             // reset timer
-            this->solve_timer()->start(
-                (int)config["calibrator"].toObject()["step_size"].toDouble());
+            this->restart((int)config["calibrator"].toObject()["step_size"].toDouble());
         }
     });
 

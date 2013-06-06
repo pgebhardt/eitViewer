@@ -14,6 +14,7 @@ class Solver : public QObject {
 public:
     explicit Solver(const QJsonObject& config, int cuda_device=0,
         QObject* parent=nullptr);
+    void restart(int step_size);
 
 signals:
     void initialized(bool success);
@@ -46,6 +47,7 @@ public:
     const cudaStream_t& cuda_stream() { return this->cuda_stream_; }
     const cublasHandle_t& cublas_handle() { return this->cublas_handle_; }
     int cuda_device() { return this->cuda_device_; }
+    int step_size() { return this->step_size_; }
 
 private:
     // member
@@ -58,6 +60,7 @@ private:
     cudaStream_t cuda_stream_;
     cublasHandle_t cublas_handle_;
     int cuda_device_;
+    int step_size_;
 };
 
 #endif // SOLVER_H
