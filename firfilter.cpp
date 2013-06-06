@@ -1,9 +1,10 @@
 #include "firfilter.h"
 
-FIRFilter::FIRFilter(unsigned int order, unsigned int time_step_size, int cuda_device,
+FIRFilter::FIRFilter(unsigned int order, unsigned int step_size, int cuda_device,
     std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> input, QObject* parent) :
     QObject(parent), thread_(nullptr), timer_(nullptr), cuda_stream_(nullptr),
-    input_(input), calc_array_(nullptr), output_(nullptr), order_(order), ring_buffer_pos_(0) {
+    input_(input), calc_array_(nullptr), output_(nullptr), order_(order), ring_buffer_pos_(0),
+    step_size_(step_size) {
     // init separate thread for execution of filter
     this->thread_ = new QThread(this);
     this->moveToThread(this->thread());
@@ -33,11 +34,16 @@ FIRFilter::FIRFilter(unsigned int order, unsigned int time_step_size, int cuda_d
         // create timer for timing filter execution
         this->timer_ = new QTimer(this);
         connect(this->timer(), &QTimer::timeout, this, &FIRFilter::calc_filter);
-        this->timer()->start(time_step_size);
+        this->restart(step_size);
 
         emit this->initialized(true);
     });
     this->thread()->start();
+}
+
+void FIRFilter::restart(int step_size) {
+    this->step_size_ = step_size;
+    this->timer()->start(this->step_size());
 }
 
 void FIRFilter::calc_filter() {

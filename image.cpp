@@ -72,7 +72,6 @@ Image::~Image() {
 std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
     const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool transparent,
     bool normalized) {
-
     // min and max values
     fastEIT::dtype::real min_value = 0.0;
     fastEIT::dtype::real max_value = 0.0;

@@ -10,9 +10,10 @@
 class FIRFilter : public QObject {
     Q_OBJECT
 public:
-    explicit FIRFilter(unsigned int order, unsigned int time_step_size, int cuda_device,
+    explicit FIRFilter(unsigned int order, unsigned int step_size, int cuda_device,
         std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> input,
         QObject *parent=nullptr);
+    void restart(int step_size);
     
 signals:
     void initialized(bool success);
@@ -37,6 +38,7 @@ public:
     }
     unsigned int order() { return this->order_; }
     fastEIT::dtype::index& ring_buffer_pos() { return this->ring_buffer_pos_; }
+    int step_size() { return this->step_size_; }
 
 private:
     // member
@@ -51,6 +53,7 @@ private:
     std::vector<fastEIT::dtype::real> filter_coefficients_;
     unsigned int order_;
     fastEIT::dtype::index ring_buffer_pos_;
+    int step_size_;
     
 };
 

@@ -167,37 +167,45 @@ void MainWindow::on_actionExit_triggered() {
 }
 
 void MainWindow::on_actionLoad_Voltage_triggered() {
-    // get load file name
-    QString file_name = QFileDialog::getOpenFileName(this, "Load Voltage",
-                                                        "", "Matrix File (*.txt)");
+    if (this->solver()) {
+        // get load file name
+        QString file_name = QFileDialog::getOpenFileName(
+            this, "Load Voltage", "", "Matrix File (*.txt)");
 
-    if (file_name != "") {
-        // load matrix
-        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), nullptr);
-        this->solver()->measured_voltage()->copy(voltage, nullptr);
+        if (file_name != "") {
+            // load matrix
+            auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), nullptr);
+            this->solver()->measured_voltage()->copy(voltage, nullptr);
+        }
     }
 }
 
 void MainWindow::on_actionSave_Voltage_triggered() {
-    // get save file name
-    QString file_name = QFileDialog::getSaveFileName(this, "Save Voltage", "",
-                                                     "Matrix File (*.txt)");
+    if (this->solver()) {
+        // get save file name
+        QString file_name = QFileDialog::getSaveFileName(
+            this, "Save Voltage", "", "Matrix File (*.txt)");
 
-    // save voltage
-    if (file_name != "") {
-        this->solver()->measured_voltage()->copyToHost(nullptr);
-        cudaStreamSynchronize(nullptr);
-        fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage());
+        // save voltage
+        if (file_name != "") {
+            this->solver()->measured_voltage()->copyToHost(nullptr);
+            cudaStreamSynchronize(nullptr);
+            fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage());
+        }
     }
 }
 
 void MainWindow::on_actionCalibrate_triggered() {
-    // set calibration voltage to current measurment voltage
-    this->solver()->calculated_voltage()->copy(this->solver()->measured_voltage(), nullptr);
+    if (this->solver()) {
+        // set calibration voltage to current measurment voltage
+        this->solver()->calculated_voltage()->copy(this->solver()->measured_voltage(), nullptr);
+    }
 }
 
 void MainWindow::on_actionAuto_Calibrate_toggled(bool arg1) {
-    this->calibrator()->running() = arg1;
+    if (this->calibrator()) {
+        this->calibrator()->running() = arg1;
+    }
 }
 
 void MainWindow::on_actionCalibrator_Settings_triggered() {
@@ -210,15 +218,15 @@ void MainWindow::on_actionCalibrator_Settings_triggered() {
 void MainWindow::on_actionSave_Image_triggered() {
     // check for image
     if (this->image()) {
-        // grap frame buffer
-        QImage bitmap = this->image()->grabFrameBuffer();
-
         // get save file name
-        QString file_name = QFileDialog::getSaveFileName(this, "Save Image", "",
-                                                        "PNG File (*.png)");
+        QString file_name = QFileDialog::getSaveFileName(
+            this, "Save Image", "", "PNG File (*.png)");
 
         // save image
         if (file_name != "") {
+            // grap frame buffer
+            QImage bitmap = this->image()->grabFrameBuffer();
+
             bitmap.save(file_name, "PNG");
         }
     }
