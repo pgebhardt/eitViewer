@@ -15,16 +15,19 @@ SOURCES += main.cpp\
     measurementsystem.cpp \
     solver.cpp \
     calibrator.cpp \
-    firfilter.cpp
+    firfilter.cpp \
+    calibratordialog.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
     measurementsystem.h \
     solver.h \
     calibrator.h \
-    firfilter.h
+    firfilter.h \
+    calibratordialog.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    calibratordialog.ui
 
 CONFIG += c++11
 

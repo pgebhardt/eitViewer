@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>24</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuSolver">
@@ -32,6 +32,7 @@
     <addaction name="separator"/>
     <addaction name="actionCalibrate"/>
     <addaction name="actionAuto_Calibrate"/>
+    <addaction name="actionCalibrator_Settings"/>
    </widget>
    <widget class="QMenu" name="menuImage">
     <property name="title">
@@ -157,6 +158,14 @@
    </property>
    <property name="text">
     <string>Calibrator Image</string>
+   </property>
+  </action>
+  <action name="actionCalibrator_Settings">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Calibrator Settings</string>
    </property>
   </action>
  </widget>

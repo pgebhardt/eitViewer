@@ -12,6 +12,7 @@
 #include "ui_mainwindow.h"
 #include "image.h"
 #include "measurementsystem.h"
+#include "calibratordialog.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::MainWindow), measurement_system_(nullptr),
@@ -40,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // enable auto calibrator menu items
     if (this->hasMultiGPU()) {
         this->ui->actionAuto_Calibrate->setEnabled(true);
+        this->ui->actionCalibrator_Settings->setEnabled(true);
     }
 }
 
@@ -121,57 +123,6 @@ void MainWindow::draw() {
     }
 }
 
-void MainWindow::on_actionLoad_Voltage_triggered() {
-    // get load file name
-    QString file_name = QFileDialog::getOpenFileName(this, "Load Voltage",
-                                                        "", "Matrix File (*.txt)");
-
-    if (file_name != "") {
-        // load matrix
-        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), nullptr);
-        this->solver()->measured_voltage()->copy(voltage, nullptr);
-    }
-}
-
-void MainWindow::on_actionSave_Voltage_triggered() {
-    // get save file name
-    QString file_name = QFileDialog::getSaveFileName(this, "Save Voltage", "",
-                                                     "Matrix File (*.txt)");
-
-    // save voltage
-    if (file_name != "") {
-        this->solver()->measured_voltage()->copyToHost(nullptr);
-        cudaStreamSynchronize(nullptr);
-        fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage());
-    }
-}
-
-void MainWindow::on_actionCalibrate_triggered() {
-    // set calibration voltage to current measurment voltage
-    this->solver()->calculated_voltage()->copy(this->solver()->measured_voltage(), nullptr);
-}
-
-void MainWindow::on_actionAuto_Calibrate_toggled(bool arg1) {
-    this->calibrator()->running() = arg1;
-}
-
-void MainWindow::on_actionSave_Image_triggered() {
-    // check for image
-    if (this->image()) {
-        // grap frame buffer
-        QImage bitmap = this->image()->grabFrameBuffer();
-
-        // get save file name
-        QString file_name = QFileDialog::getSaveFileName(this, "Save Image", "",
-                                                        "PNG File (*.png)");
-
-        // save image
-        if (file_name != "") {
-            bitmap.save(file_name, "PNG");
-        }
-    }
-}
-
 void MainWindow::on_actionOpen_triggered() {
     // get open file name
     QString file_name = QFileDialog::getOpenFileName(this, "Load Solver", "",
@@ -213,6 +164,62 @@ void MainWindow::on_actionOpen_triggered() {
 void MainWindow::on_actionExit_triggered() {
     // quit application
     this->close();
+}
+
+void MainWindow::on_actionLoad_Voltage_triggered() {
+    // get load file name
+    QString file_name = QFileDialog::getOpenFileName(this, "Load Voltage",
+                                                        "", "Matrix File (*.txt)");
+
+    if (file_name != "") {
+        // load matrix
+        auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), nullptr);
+        this->solver()->measured_voltage()->copy(voltage, nullptr);
+    }
+}
+
+void MainWindow::on_actionSave_Voltage_triggered() {
+    // get save file name
+    QString file_name = QFileDialog::getSaveFileName(this, "Save Voltage", "",
+                                                     "Matrix File (*.txt)");
+
+    // save voltage
+    if (file_name != "") {
+        this->solver()->measured_voltage()->copyToHost(nullptr);
+        cudaStreamSynchronize(nullptr);
+        fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage());
+    }
+}
+
+void MainWindow::on_actionCalibrate_triggered() {
+    // set calibration voltage to current measurment voltage
+    this->solver()->calculated_voltage()->copy(this->solver()->measured_voltage(), nullptr);
+}
+
+void MainWindow::on_actionAuto_Calibrate_toggled(bool arg1) {
+    this->calibrator()->running() = arg1;
+}
+
+void MainWindow::on_actionCalibrator_Settings_triggered() {
+    CalibratorDialog dialog(this);
+    dialog.exec();
+}
+
+void MainWindow::on_actionSave_Image_triggered() {
+    // check for image
+    if (this->image()) {
+        // grap frame buffer
+        QImage bitmap = this->image()->grabFrameBuffer();
+
+        // get save file name
+        QString file_name = QFileDialog::getSaveFileName(this, "Save Image", "",
+                                                        "PNG File (*.png)");
+
+        // save image
+        if (file_name != "") {
+            bitmap.save(file_name, "PNG");
+        }
+    }
 }
 
 void MainWindow::solver_initialized(bool success) {
