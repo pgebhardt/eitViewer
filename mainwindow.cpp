@@ -95,8 +95,7 @@ void MainWindow::cleanupSolver() {
 }
 
 void MainWindow::draw() {
-    // check for image
-    if (this->image()) {
+    if (this->solver()) {
         // solve
         auto gamma = this->solver()->dgamma();
         if (this->ui->actionCalibrator_Data->isChecked()) {
@@ -105,7 +104,7 @@ void MainWindow::draw() {
 
         // update image
         fastEIT::dtype::real min_value, max_value;
-        std::tie(min_value, max_value) = this->image()->draw(gamma,
+        std::tie(min_value, max_value) = this->ui->image->draw(gamma,
             this->ui->actionAuto_Normalize->isChecked());
 
         // calc fps
@@ -219,29 +218,26 @@ void MainWindow::on_actionCalibrator_Settings_triggered() {
 }
 
 void MainWindow::on_actionSave_Image_triggered() {
-    // check for image
-    if (this->image()) {
-        // get save file name
-        QString file_name = QFileDialog::getSaveFileName(
-            this, "Save Image", "", "PNG File (*.png)");
+    // get save file name
+    QString file_name = QFileDialog::getSaveFileName(
+        this, "Save Image", "", "PNG File (*.png)");
 
-        // save image
-        if (file_name != "") {
-            // grap frame buffer
-            QImage bitmap = this->image()->grabFrameBuffer();
+    // save image
+    if (file_name != "") {
+        // grap frame buffer
+        QImage bitmap = this->ui->image->grabFrameBuffer();
 
-            bitmap.save(file_name, "PNG");
-        }
+        bitmap.save(file_name, "PNG");
     }
 }
 
 void MainWindow::solver_initialized(bool success) {
     if (success) {
-        // create image
-        this->image_ = new Image(this->solver()->fasteit_solver()->model(), this);
-        this->image()->draw(this->solver()->fasteit_solver()->dgamma(),
+        // init image
+        this->draw_timer().stop();
+        this->ui->image->init(this->solver()->fasteit_solver()->model());
+        this->ui->image->draw(this->solver()->fasteit_solver()->dgamma(),
             this->ui->actionAuto_Normalize->isChecked());
-        this->setCentralWidget(this->image());
         this->draw_timer().start(20);
 
         // set correct matrix for measurement system

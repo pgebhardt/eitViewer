@@ -45,7 +45,6 @@ public:
     MeasurementSystem* measurement_system() { return this->measurement_system_; }
     Solver* solver() { return this->solver_; }
     Calibrator* calibrator() { return this->calibrator_; }
-    Image* image() { return this->image_; }
     QTimer& draw_timer() { return *this->draw_timer_; }
     QLabel& solve_time_label() { return *this->solve_time_label_; }
     QLabel& calibrate_time_label() { return *this->calibrate_time_label_; }
@@ -57,7 +56,6 @@ private:
     MeasurementSystem* measurement_system_;
     Solver* solver_;
     Calibrator* calibrator_;
-    Image* image_;
     QTimer* draw_timer_;
     QLabel* solve_time_label_;
     QLabel* calibrate_time_label_;

@@ -16,12 +16,29 @@ void jet(const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, fa
     }
 }
 
-Image::Image(const std::shared_ptr<fastEIT::model::Model> model, QWidget *parent) :
-    QGLWidget(parent), model_(model), red_(model->mesh()->elements()->rows()),
-    green_(model->mesh()->elements()->rows()), blue_(model->mesh()->elements()->rows()),
-    node_area_(model->mesh()->nodes()->rows()), element_area_(model->mesh()->elements()->rows()),
-    x_angle_(0.0), z_angle_(0.0), normalization_factor_(1.0) {
-    // create buffer
+Image::Image(QWidget* parent) :
+    QGLWidget(parent), model_(nullptr), red_(0), green_(0), blue_(0), node_area_(0),
+    element_area_(0), x_angle_(0.0), z_angle_(0.0), normalization_factor_(1.0) {
+}
+
+Image::~Image() {
+    this->cleanup();
+}
+
+void Image::init(std::shared_ptr<fastEIT::model::Model> model) {
+    this->model_ = model;
+
+    // cleanup
+    this->cleanup();
+
+    // create vectors
+    this->red_ = std::vector<fastEIT::dtype::real>(this->model()->mesh()->elements()->rows(), 1.0);
+    this->green_ = std::vector<fastEIT::dtype::real>(this->model()->mesh()->elements()->rows(), 1.0);
+    this->blue_ = std::vector<fastEIT::dtype::real>(this->model()->mesh()->elements()->rows(), 1.0);
+    this->node_area_ = std::vector<fastEIT::dtype::real>(this->model()->mesh()->nodes()->rows(), 0.0);
+    this->element_area_ = std::vector<fastEIT::dtype::real>(this->model()->mesh()->elements()->rows(), 0.0);
+
+    // create OpenGL buffer
     this->vertices_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 3];
     this->colors_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 4];
 
@@ -64,13 +81,22 @@ Image::Image(const std::shared_ptr<fastEIT::model::Model> model, QWidget *parent
     }
 }
 
-Image::~Image() {
-    delete this->vertices_;
-    delete this->colors_;
+void Image::cleanup() {
+    if (this->vertices_) {
+        delete this->vertices_;
+    }
+    if (this->colors_) {
+        delete this->colors_;
+    }
 }
 
 std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
     const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool normalized) {
+    // check for beeing initialized
+    if ((!this->vertices_) || (!this->colors_) || (!this->model())) {
+        return std::make_tuple(0.0, 0.0);
+    }
+
     // min and max values
     fastEIT::dtype::real min_value = 0.0;
     fastEIT::dtype::real max_value = 0.0;
@@ -159,6 +185,11 @@ void Image::paintGL() {
     // clear
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // check for beeing initialized
+    if ((!this->vertices_) || (!this->colors_) || (!this->model())) {
+        return;
+    }
+
     // activate and specify pointer to vertex array
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
@@ -170,29 +201,29 @@ void Image::paintGL() {
     // draw elements
     glDrawArrays(GL_TRIANGLES, 0, this->model()->mesh()->elements()->rows() * 3);
 
+    // dactivate vertex arrays after drawing
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
     // draw electrodes
     glBegin(GL_LINES);
 
     // first electrode will be marked red
     glColor3f(1.0, 0.0, 0.0);
-    glVertex3f(std::get<0>(std::get<0>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius(),
-               std::get<1>(std::get<0>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius(), 0.0);
-    glVertex3f(std::get<0>(std::get<1>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius(),
-               std::get<1>(std::get<1>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius(), 0.0);
+    glVertex2f(std::get<0>(std::get<0>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius(),
+               std::get<1>(std::get<0>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius());
+    glVertex2f(std::get<0>(std::get<1>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius(),
+               std::get<1>(std::get<1>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius());
 
     glLineWidth(5.0);
     glColor3f(0.0, 0.0, 0.0);
     for (fastEIT::dtype::index electrode = 1; electrode < this->model()->electrodes()->count(); ++electrode) {
-        glVertex3f(std::get<0>(std::get<0>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius(),
-                   std::get<1>(std::get<0>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius(), 0.0);
-        glVertex3f(std::get<0>(std::get<1>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius(),
-                   std::get<1>(std::get<1>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius(), 0.0);
+        glVertex2f(std::get<0>(std::get<0>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius(),
+                   std::get<1>(std::get<0>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius());
+        glVertex2f(std::get<0>(std::get<1>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius(),
+                   std::get<1>(std::get<1>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius());
     }
     glEnd();
-
-    // dactivate vertex arrays after drawing
-    glDisableClientState(GL_COLOR_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void Image::mousePressEvent(QMouseEvent* event) {

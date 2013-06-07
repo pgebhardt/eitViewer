@@ -9,16 +9,11 @@ class Image : public QGLWidget
 {
     Q_OBJECT
 public:
-    explicit Image(const std::shared_ptr<fastEIT::model::Model> model, QWidget *parent = 0);
+    explicit Image(QWidget* parent=nullptr);
     virtual ~Image();
 
-    void init(const std::shared_ptr<fastEIT::Model<fastEIT::basis::Linear>> model);
-
-signals:
-
-public slots:
-
-public:
+    void init(std::shared_ptr<fastEIT::model::Model> model);
+    void cleanup();
     std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> draw(
         const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool normalized);
 
@@ -32,7 +27,7 @@ protected:
 
 public:
     // accessors
-    const std::shared_ptr<fastEIT::model::Model> model() const {
+    std::shared_ptr<fastEIT::model::Model> model() const {
         return this->model_;
     }
     const std::vector<fastEIT::dtype::real>& red() const {
@@ -57,7 +52,7 @@ public:
     fastEIT::dtype::real& normalization_factor() { return this->normalization_factor_; }
 
 private:
-    const std::shared_ptr<fastEIT::model::Model> model_;
+    std::shared_ptr<fastEIT::model::Model> model_;
     GLfloat* vertices_;
     GLfloat* colors_;
     std::vector<fastEIT::dtype::real> red_;
