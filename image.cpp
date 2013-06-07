@@ -17,8 +17,9 @@ void jet(const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, fa
 }
 
 Image::Image(QWidget* parent) :
-    QGLWidget(parent), model_(nullptr), red_(0), green_(0), blue_(0), node_area_(0),
-    element_area_(0), x_angle_(0.0), z_angle_(0.0), normalization_factor_(1.0) {
+    QGLWidget(parent), model_(nullptr), vertices_(nullptr), colors_(nullptr),
+    red_(0), green_(0), blue_(0), node_area_(0), element_area_(0), x_angle_(0.0),
+    z_angle_(0.0), normalization_factor_(1.0) {
 }
 
 Image::~Image() {

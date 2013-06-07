@@ -36,7 +36,7 @@ private slots:
     void calibrator_initialized(bool success);
 
 protected:
-    void createStatusBar();
+    void initTable();
     bool hasMultiGPU() { int devCount = 0; cudaGetDeviceCount(&devCount); return devCount > 1; }
     void cleanupSolver();
 

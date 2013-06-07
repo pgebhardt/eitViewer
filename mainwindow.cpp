@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::MainWindow), measurement_system_(nullptr),
     solver_(nullptr), calibrator_(nullptr) {
     ui->setupUi(this);
+    this->statusBar()->hide();
 
     // enable peer access for 2 gpus
     if (this->hasMultiGPU()) {
@@ -35,8 +36,9 @@ MainWindow::MainWindow(QWidget *parent) :
     this->measurement_system_ = new MeasurementSystem(
         std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(1, 1, nullptr));
 
-    // create status bar
-    this->createStatusBar();
+    // TODO
+    // init table widget
+    this->initTable();
 
     // enable auto calibrator menu items
     if (this->hasMultiGPU()) {
@@ -59,24 +61,16 @@ MainWindow::~MainWindow() {
     this->cleanupSolver();
 }
 
-void MainWindow::createStatusBar() {
-    // create label
-    this->solve_time_label_ = new QLabel("solve time:", this);
-    this->calibrate_time_label_ = new QLabel("calibrate time:", this);
-    this->min_label_ = new QLabel("min:", this);
-    this->max_label_ = new QLabel("max:", this);
+void MainWindow::initTable() {
+    this->ui->tableWidget->setItem(0, 0, new QTableWidgetItem("solve time:"));
+    this->ui->tableWidget->setItem(1, 0, new QTableWidgetItem("calibrate time:"));
+    this->ui->tableWidget->setItem(2, 0, new QTableWidgetItem("min:"));
+    this->ui->tableWidget->setItem(3, 0, new QTableWidgetItem("max:"));
 
-    // set frame style
-    this->solve_time_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
-    this->calibrate_time_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
-    this->min_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
-    this->max_label().setFrameStyle(QFrame::Panel | QFrame::Sunken);
-
-    // fill status bar
-    this->statusBar()->addPermanentWidget(&this->solve_time_label(), 1);
-    this->statusBar()->addPermanentWidget(&this->calibrate_time_label(), 1);
-    this->statusBar()->addPermanentWidget(&this->min_label(), 1);
-    this->statusBar()->addPermanentWidget(&this->max_label(), 1);
+    this->ui->tableWidget->setItem(0, 1, new QTableWidgetItem(""));
+    this->ui->tableWidget->setItem(1, 1, new QTableWidgetItem(""));
+    this->ui->tableWidget->setItem(2, 1, new QTableWidgetItem(""));
+    this->ui->tableWidget->setItem(3, 1, new QTableWidgetItem(""));
 }
 
 void MainWindow::cleanupSolver() {
@@ -108,16 +102,16 @@ void MainWindow::draw() {
             this->ui->actionAuto_Normalize->isChecked());
 
         // calc fps
-        this->solve_time_label().setText(
-            QString("solve time: %1 ms").arg(this->solver()->solve_time()));
+        this->ui->tableWidget->item(0, 1)->setText(
+            QString("%1 ms").arg(this->solver()->solve_time()));
         if (this->calibrator()) {
-            this->calibrate_time_label().setText(
-                QString("calibrate time: %1 ms").arg(this->calibrator()->solve_time()));
+            this->ui->tableWidget->item(1, 1)->setText(
+                QString("%1 ms").arg(this->calibrator()->solve_time()));
         }
 
         // update min max label
-        this->min_label().setText(QString("min: %1 dB").arg(min_value));
-        this->max_label().setText(QString("max: %1 dB").arg(max_value));
+        this->ui->tableWidget->item(2, 1)->setText(QString("%1 dB").arg(min_value));
+        this->ui->tableWidget->item(3, 1)->setText(QString("%1 dB").arg(max_value));
     }
 }
 
