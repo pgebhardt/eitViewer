@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QTime>
 #include <QLabel>
+#include <functional>
 #include <fasteit/fasteit.h>
 #include "image.h"
 #include "measurementsystem.h"
@@ -39,6 +40,8 @@ protected:
     void initTable();
     bool hasMultiGPU() { int devCount = 0; cudaGetDeviceCount(&devCount); return devCount > 1; }
     void cleanupSolver();
+    void addAnalysis(QString name, QString unit, std::function<fastEIT::dtype::real(
+        std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>)> analysis);
 
 public:
     // accessor
@@ -46,10 +49,9 @@ public:
     Solver* solver() { return this->solver_; }
     Calibrator* calibrator() { return this->calibrator_; }
     QTimer& draw_timer() { return *this->draw_timer_; }
-    QLabel& solve_time_label() { return *this->solve_time_label_; }
-    QLabel& calibrate_time_label() { return *this->calibrate_time_label_; }
-    QLabel& min_label() { return *this->min_label_; }
-    QLabel& max_label() { return *this->max_label_; }
+    std::vector<std::tuple<int, QString,
+        std::function<fastEIT::dtype::real(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>)>>>&
+        analysis() { return this->analysis_; }
 
 private:
     Ui::MainWindow *ui;
@@ -57,10 +59,9 @@ private:
     Solver* solver_;
     Calibrator* calibrator_;
     QTimer* draw_timer_;
-    QLabel* solve_time_label_;
-    QLabel* calibrate_time_label_;
-    QLabel* min_label_;
-    QLabel* max_label_;
+    std::vector<std::tuple<int, QString,
+        std::function<fastEIT::dtype::real(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>)>>>
+        analysis_;
 };
 
 #endif // MAINWINDOW_H

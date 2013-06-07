@@ -14,8 +14,8 @@ public:
 
     void init(std::shared_ptr<fastEIT::model::Model> model);
     void cleanup();
-    std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> draw(
-        const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool normalized);
+    void draw(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values,
+        bool normalized);
 
 protected:
     virtual void initializeGL();

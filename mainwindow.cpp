@@ -64,13 +64,33 @@ MainWindow::~MainWindow() {
 void MainWindow::initTable() {
     this->ui->tableWidget->setItem(0, 0, new QTableWidgetItem("solve time:"));
     this->ui->tableWidget->setItem(1, 0, new QTableWidgetItem("calibrate time:"));
-    this->ui->tableWidget->setItem(2, 0, new QTableWidgetItem("min:"));
-    this->ui->tableWidget->setItem(3, 0, new QTableWidgetItem("max:"));
 
     this->ui->tableWidget->setItem(0, 1, new QTableWidgetItem(""));
     this->ui->tableWidget->setItem(1, 1, new QTableWidgetItem(""));
-    this->ui->tableWidget->setItem(2, 1, new QTableWidgetItem(""));
-    this->ui->tableWidget->setItem(3, 1, new QTableWidgetItem(""));
+
+    this->addAnalysis("min:", "dB", [](std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values) -> fastEIT::dtype::real {
+        fastEIT::dtype::real result = 0.0;
+        for (fastEIT::dtype::index i = 0; i < values->rows(); ++i) {
+            result = std::min((*values)(i, 0), result);
+        }
+        return result;
+    });
+    this->addAnalysis("max:", "dB", [](std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values) -> fastEIT::dtype::real {
+        fastEIT::dtype::real result = 0.0;
+        for (fastEIT::dtype::index i = 0; i < values->rows(); ++i) {
+            result = std::max((*values)(i, 0), result);
+        }
+        return result;
+    });
+    this->addAnalysis("rms:", "dB", [=](std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values) -> fastEIT::dtype::real {
+        fastEIT::dtype::real rms = 0.0;
+        fastEIT::dtype::real area = 0.0;
+        for (fastEIT::dtype::index i = 0; i < values->rows(); ++i) {
+            rms += fastEIT::math::square((*values)(i, 0)) * this->ui->image->element_area()[i];
+            area += this->ui->image->element_area()[i];
+        }
+        return (1.0 / area) * std::sqrt(rms);
+    });
 }
 
 void MainWindow::cleanupSolver() {
@@ -88,6 +108,20 @@ void MainWindow::cleanupSolver() {
     }
 }
 
+void MainWindow::addAnalysis(QString name, QString unit,
+    std::function<fastEIT::dtype::real(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>)> analysis) {
+    // create new table row and table items
+    this->ui->tableWidget->insertRow(this->ui->tableWidget->rowCount());
+    this->ui->tableWidget->setItem(this->ui->tableWidget->rowCount() - 1, 0,
+        new QTableWidgetItem(name));
+    this->ui->tableWidget->setItem(this->ui->tableWidget->rowCount() - 1, 1,
+        new QTableWidgetItem(""));
+
+    // add function to vector
+    this->analysis().push_back(std::make_tuple(
+        this->ui->tableWidget->rowCount() - 1, unit, analysis));
+}
+
 void MainWindow::draw() {
     if (this->solver()) {
         // solve
@@ -97,9 +131,7 @@ void MainWindow::draw() {
         }
 
         // update image
-        fastEIT::dtype::real min_value, max_value;
-        std::tie(min_value, max_value) = this->ui->image->draw(gamma,
-            this->ui->actionAuto_Normalize->isChecked());
+        this->ui->image->draw(gamma, this->ui->actionAuto_Normalize->isChecked());
 
         // calc fps
         this->ui->tableWidget->item(0, 1)->setText(
@@ -109,9 +141,11 @@ void MainWindow::draw() {
                 QString("%1 ms").arg(this->calibrator()->solve_time()));
         }
 
-        // update min max label
-        this->ui->tableWidget->item(2, 1)->setText(QString("%1 dB").arg(min_value));
-        this->ui->tableWidget->item(3, 1)->setText(QString("%1 dB").arg(max_value));
+        // evaluate analysis functions
+        for (const auto& analysis : this->analysis()) {
+            this->ui->tableWidget->item(std::get<0>(analysis), 1)->setText(
+                QString("%1 ").arg(std::get<2>(analysis)(gamma)) + std::get<1>(analysis));
+        }
     }
 }
 

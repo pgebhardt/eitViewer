@@ -60,7 +60,7 @@
           <enum>QAbstractItemView::SingleSelection</enum>
          </property>
          <property name="rowCount">
-          <number>4</number>
+          <number>2</number>
          </property>
          <property name="columnCount">
           <number>2</number>
@@ -77,8 +77,6 @@
          <attribute name="verticalHeaderStretchLastSection">
           <bool>false</bool>
          </attribute>
-         <row/>
-         <row/>
          <row/>
          <row/>
          <column>

@@ -84,18 +84,20 @@ void Image::init(std::shared_ptr<fastEIT::model::Model> model) {
 
 void Image::cleanup() {
     if (this->vertices_) {
-        delete this->vertices_;
+        delete [] this->vertices_;
+        this->vertices_ = nullptr;
     }
     if (this->colors_) {
-        delete this->colors_;
+        delete [] this->colors_;
+        this->colors_ = nullptr;
     }
 }
 
-std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
-    const std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values, bool normalized) {
+void Image::draw(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values,
+    bool normalized) {
     // check for beeing initialized
     if ((!this->vertices_) || (!this->colors_) || (!this->model())) {
-        return std::make_tuple(0.0, 0.0);
+        return;
     }
 
     // min and max values
@@ -158,8 +160,6 @@ std::tuple<fastEIT::dtype::real, fastEIT::dtype::real> Image::draw(
 
     // redraw
     this->updateGL();
-
-    return std::make_tuple(min_value, max_value);
 }
 
 void Image::initializeGL() {
