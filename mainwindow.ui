@@ -29,7 +29,7 @@
     </property>
     <item row="0" column="0">
      <widget class="QWidget" name="container" native="true">
-      <layout class="QGridLayout" name="gridLayout_3" columnstretch="1,0,0">
+      <layout class="QGridLayout" name="gridLayout_3" columnstretch="1,0">
        <property name="leftMargin">
         <number>0</number>
        </property>
@@ -99,7 +99,6 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <zorder>tableWidget</zorder>
         </widget>
        </item>
       </layout>
@@ -113,15 +112,15 @@
      <x>0</x>
      <y>0</y>
      <width>1054</width>
-     <height>27</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuSolver">
     <property name="title">
      <string>Solver</string>
     </property>
-    <addaction name="actionLoad_Voltage"/>
-    <addaction name="actionSave_Voltage"/>
+    <addaction name="actionLoad_Measurement"/>
+    <addaction name="actionSave_Measurement"/>
     <addaction name="separator"/>
     <addaction name="actionCalibrate"/>
     <addaction name="actionAuto_Calibrate"/>
@@ -148,14 +147,14 @@
    <addaction name="menuImage"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="actionLoad_Voltage">
+  <action name="actionLoad_Measurement">
    <property name="text">
-    <string>Load Voltage</string>
+    <string>Load Measurement</string>
    </property>
   </action>
-  <action name="actionSave_Voltage">
+  <action name="actionSave_Measurement">
    <property name="text">
-    <string>Save Voltage</string>
+    <string>Save Measurement</string>
    </property>
   </action>
   <action name="actionStart_Solver">

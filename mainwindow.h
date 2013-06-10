@@ -27,8 +27,8 @@ private slots:
     void draw();
     void on_actionOpen_triggered();
     void on_actionExit_triggered();
-    void on_actionLoad_Voltage_triggered();
-    void on_actionSave_Voltage_triggered();
+    void on_actionLoad_Measurement_triggered();
+    void on_actionSave_Measurement_triggered();
     void on_actionCalibrate_triggered();
     void on_actionAuto_Calibrate_toggled(bool arg1);
     void on_actionCalibrator_Settings_triggered();

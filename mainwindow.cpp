@@ -192,35 +192,35 @@ void MainWindow::on_actionExit_triggered() {
     this->close();
 }
 
-void MainWindow::on_actionLoad_Voltage_triggered() {
+void MainWindow::on_actionLoad_Measurement_triggered() {
     if (this->solver()) {
         // get load file name
         QString file_name = QFileDialog::getOpenFileName(
-            this, "Load Voltage", "", "Matrix File (*.txt)");
+            this, "Load Measurement", "", "Matrix File (*.txt)");
 
         if (file_name != "") {
             // load matrix
             try {
                 auto voltage = fastEIT::matrix::loadtxt<fastEIT::dtype::real>(file_name.toStdString(), nullptr);
-                this->solver()->measured_voltage()->copy(voltage, nullptr);
+                this->solver()->measurement()->copy(voltage, nullptr);
             } catch(const std::exception&) {
-                QMessageBox::information(this, this->windowTitle(), "Cannot load voltage matrix!");
+                QMessageBox::information(this, this->windowTitle(), "Cannot load measurement matrix!");
             }
         }
     }
 }
 
-void MainWindow::on_actionSave_Voltage_triggered() {
+void MainWindow::on_actionSave_Measurement_triggered() {
     if (this->solver()) {
         // get save file name
         QString file_name = QFileDialog::getSaveFileName(
-            this, "Save Voltage", "", "Matrix File (*.txt)");
+            this, "Save Measurement", "", "Matrix File (*.txt)");
 
-        // save voltage
+        // save measurement to file
         if (file_name != "") {
-            this->solver()->measured_voltage()->copyToHost(nullptr);
+            this->solver()->measurement()->copyToHost(nullptr);
             cudaStreamSynchronize(nullptr);
-            fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measured_voltage());
+            fastEIT::matrix::savetxt(file_name.toStdString(), this->solver()->measurement());
         }
     }
 }
@@ -228,7 +228,7 @@ void MainWindow::on_actionSave_Voltage_triggered() {
 void MainWindow::on_actionCalibrate_triggered() {
     if (this->solver()) {
         // set calibration voltage to current measurment voltage
-        this->solver()->calculated_voltage()->copy(this->solver()->measured_voltage(), nullptr);
+        this->solver()->calculation()->copy(this->solver()->measurement(), nullptr);
     }
 }
 
@@ -269,7 +269,7 @@ void MainWindow::solver_initialized(bool success) {
         this->draw_timer().start(20);
 
         // set correct matrix for measurement system
-        this->measurement_system()->setMeasurementMatrix(this->solver()->measured_voltage());
+        this->measurement_system()->setMeasurementMatrix(this->solver()->measurement());
     } else {
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot load solver from config!"));

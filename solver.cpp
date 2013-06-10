@@ -76,7 +76,7 @@ Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
                 config["solver"].toObject()["regularization_factor"].toDouble(),
                 this->cublas_handle(), this->cuda_stream());
             this->fasteit_solver()->preSolve(this->cublas_handle(), this->cuda_stream());
-            this->measured_voltage()->copyToHost(this->cuda_stream());
+            this->measurement()->copyToHost(this->cuda_stream());
 
             // start solve timer
             this->solve_timer_ = new QTimer(this);

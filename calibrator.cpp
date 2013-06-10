@@ -33,7 +33,7 @@ Calibrator::~Calibrator() {
 
 void Calibrator::init_filter(int order, int step_size) {
     this->filter_ = new FIRFilter(order, step_size, this->cuda_device(),
-        this->differential_solver()->measured_voltage());
+        this->differential_solver()->measurement());
 }
 
 void Calibrator::solve() {
@@ -41,13 +41,13 @@ void Calibrator::solve() {
         this->time().restart();
 
         cudaStreamSynchronize(this->filter()->cuda_stream());
-        this->measured_voltage()->copy(this->filter()->output(),
+        this->measurement()->copy(this->filter()->output(),
             this->cuda_stream());
 
         this->fasteit_solver()->solve_absolute(this->cublas_handle(),
             this->cuda_stream())->copyToHost(this->cuda_stream());
 
-        this->differential_solver()->calculated_voltage()->copy(
+        this->differential_solver()->calculation()->copy(
             this->fasteit_solver()->forward_solver()->voltage(),
             this->cuda_stream());
 

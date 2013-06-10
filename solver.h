@@ -24,11 +24,11 @@ protected slots:
 
 public:
     // accessors
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measured_voltage() {
-        return this->fasteit_solver()->measured_voltage(0);
+    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement() {
+        return this->fasteit_solver()->measurement(0);
     }
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> calculated_voltage() {
-        return this->fasteit_solver()->calculated_voltage(0);
+    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> calculation() {
+        return this->fasteit_solver()->calculation(0);
     }
     std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> gamma() {
         return this->fasteit_solver()->gamma();
