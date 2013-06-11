@@ -89,7 +89,7 @@ void MainWindow::initTable() {
             rms += fastEIT::math::square((*values)(i, 0)) * this->ui->image->element_area()[i];
             area += this->ui->image->element_area()[i];
         }
-        return (1.0 / area) * std::sqrt(rms);
+        return std::sqrt(rms / area);
     });
 }
 
