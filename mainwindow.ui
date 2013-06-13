@@ -49,7 +49,7 @@
         <number>6</number>
        </property>
        <item row="0" column="1">
-        <widget class="QTableWidget" name="tableWidget">
+        <widget class="QTableWidget" name="analysis_table">
          <property name="autoFillBackground">
           <bool>true</bool>
          </property>
@@ -60,7 +60,7 @@
           <enum>QAbstractItemView::SingleSelection</enum>
          </property>
          <property name="rowCount">
-          <number>2</number>
+          <number>0</number>
          </property>
          <property name="columnCount">
           <number>2</number>
@@ -77,8 +77,6 @@
          <attribute name="verticalHeaderStretchLastSection">
           <bool>false</bool>
          </attribute>
-         <row/>
-         <row/>
          <column>
           <property name="text">
            <string>Description</string>
@@ -112,7 +110,7 @@
      <x>0</x>
      <y>0</y>
      <width>1054</width>
-     <height>21</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuSolver">

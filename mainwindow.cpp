@@ -62,12 +62,12 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::initTable() {
-    this->ui->tableWidget->setItem(0, 0, new QTableWidgetItem("solve time:"));
-    this->ui->tableWidget->setItem(1, 0, new QTableWidgetItem("calibrate time:"));
-
-    this->ui->tableWidget->setItem(0, 1, new QTableWidgetItem(""));
-    this->ui->tableWidget->setItem(1, 1, new QTableWidgetItem(""));
-
+    this->addAnalysis("solve time:", "ms", [=](std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>) -> fastEIT::dtype::real {
+        return this->solver()->solve_time();
+    });
+    this->addAnalysis("calibrate time:", "ms", [=](std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>) -> fastEIT::dtype::real {
+        return this->calibrator()->solve_time();
+    });
     this->addAnalysis("min:", "dB", [](std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> values) -> fastEIT::dtype::real {
         fastEIT::dtype::real result = 0.0;
         for (fastEIT::dtype::index i = 0; i < values->rows(); ++i) {
@@ -111,15 +111,15 @@ void MainWindow::cleanupSolver() {
 void MainWindow::addAnalysis(QString name, QString unit,
     std::function<fastEIT::dtype::real(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>)> analysis) {
     // create new table row and table items
-    this->ui->tableWidget->insertRow(this->ui->tableWidget->rowCount());
-    this->ui->tableWidget->setItem(this->ui->tableWidget->rowCount() - 1, 0,
+    this->ui->analysis_table->insertRow(this->ui->analysis_table->rowCount());
+    this->ui->analysis_table->setItem(this->ui->analysis_table->rowCount() - 1, 0,
         new QTableWidgetItem(name));
-    this->ui->tableWidget->setItem(this->ui->tableWidget->rowCount() - 1, 1,
+    this->ui->analysis_table->setItem(this->ui->analysis_table->rowCount() - 1, 1,
         new QTableWidgetItem(""));
 
     // add function to vector
     this->analysis().push_back(std::make_tuple(
-        this->ui->tableWidget->rowCount() - 1, unit, analysis));
+        this->ui->analysis_table->rowCount() - 1, unit, analysis));
 }
 
 void MainWindow::draw() {
@@ -133,17 +133,9 @@ void MainWindow::draw() {
         // update image
         this->ui->image->draw(gamma, this->ui->actionAuto_Normalize->isChecked());
 
-        // calc fps
-        this->ui->tableWidget->item(0, 1)->setText(
-            QString("%1 ms").arg(this->solver()->solve_time()));
-        if (this->calibrator()) {
-            this->ui->tableWidget->item(1, 1)->setText(
-                QString("%1 ms").arg(this->calibrator()->solve_time()));
-        }
-
         // evaluate analysis functions
         for (const auto& analysis : this->analysis()) {
-            this->ui->tableWidget->item(std::get<0>(analysis), 1)->setText(
+            this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
                 QString("%1 ").arg(std::get<2>(analysis)(gamma)) + std::get<1>(analysis));
         }
     }

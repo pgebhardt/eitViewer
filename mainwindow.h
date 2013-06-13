@@ -3,8 +3,6 @@
 
 #include <QMainWindow>
 #include <QTimer>
-#include <QTime>
-#include <QLabel>
 #include <functional>
 #include <fasteit/fasteit.h>
 #include "image.h"
