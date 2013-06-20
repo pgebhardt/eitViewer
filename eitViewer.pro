@@ -44,6 +44,7 @@ INCLUDEPATH += /usr/local/cuda/include
 DEPENDPATH += /usr/local/cuda/include
 
 unix:!symbian: LIBS += -L/usr/local/lib -lmpflow
+QMAKE_LIBS += -Wl,-rpath=/usr/local/lib
 
 INCLUDEPATH += /usr/local/include
 DEPENDPATH += /usr/local/include
