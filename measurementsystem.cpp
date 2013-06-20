@@ -1,7 +1,7 @@
 #include "measurementsystem.h"
 #include <QDataStream>
 
-MeasurementSystem::MeasurementSystem(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement,
+MeasurementSystem::MeasurementSystem(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> measurement,
     QObject* parent) :
     QObject(parent), measurement_system_socket_(nullptr), measurement_(measurement) {
     // create separat thread
@@ -30,11 +30,11 @@ void MeasurementSystem::readyRead() {
     QDataStream input_stream(datagram);
     double excitation = -1.0;
     input_stream >> excitation;
-    if ((fastEIT::dtype::index)excitation < this->measurement()->columns()) {
+    if ((mpFlow::dtype::index)excitation < this->measurement()->columns()) {
         double data = 0.0;
-        for (fastEIT::dtype::index i = 0; i < this->measurement()->rows(); ++i) {
+        for (mpFlow::dtype::index i = 0; i < this->measurement()->rows(); ++i) {
             input_stream >> data;
-            (*this->measurement())(i, (fastEIT::dtype::index)excitation) = data;
+            (*this->measurement())(i, (mpFlow::dtype::index)excitation) = data;
         }
     }
     this->measurement()->copyToDevice(nullptr);
