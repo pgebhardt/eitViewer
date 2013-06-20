@@ -7,7 +7,7 @@ Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
     connect(this, &Calibrator::initialized, [=](bool success) {
         if (success) {
             // set regularization factor
-            this->fasteit_solver()->inverse_solver()->regularization_factor() =
+            this->eit_solver()->inverse_solver()->regularization_factor() =
                 config["calibrator"].toObject()["regularization_factor"].toDouble();
 
             // reset timer
@@ -44,11 +44,11 @@ void Calibrator::solve() {
         this->measurement()->copy(this->filter()->output(),
             this->cuda_stream());
 
-        this->fasteit_solver()->solve_absolute(this->cublas_handle(),
+        this->eit_solver()->solve_absolute(this->cublas_handle(),
             this->cuda_stream())->copyToHost(this->cuda_stream());
 
         this->differential_solver()->calculation()->copy(
-            this->fasteit_solver()->forward_solver()->voltage(),
+            this->eit_solver()->forward_solver()->voltage(),
             this->cuda_stream());
 
         this->solve_time() = this->time().elapsed();

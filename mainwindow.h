@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QTimer>
 #include <functional>
-#include <fasteit/fasteit.h>
+#include <mpflow/mpflow.h>
 #include "image.h"
 #include "measurementsystem.h"
 #include "solver.h"
@@ -38,8 +38,8 @@ protected:
     void initTable();
     bool hasMultiGPU() { int devCount = 0; cudaGetDeviceCount(&devCount); return devCount > 1; }
     void cleanupSolver();
-    void addAnalysis(QString name, QString unit, std::function<fastEIT::dtype::real(
-        std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>)> analysis);
+    void addAnalysis(QString name, QString unit, std::function<mpFlow::dtype::real(
+        std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>)> analysis);
 
 public:
     // accessor
@@ -48,7 +48,7 @@ public:
     Calibrator* calibrator() { return this->calibrator_; }
     QTimer& draw_timer() { return *this->draw_timer_; }
     std::vector<std::tuple<int, QString,
-        std::function<fastEIT::dtype::real(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>)>>>&
+        std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>)>>>&
         analysis() { return this->analysis_; }
 
 private:
@@ -58,7 +58,7 @@ private:
     Calibrator* calibrator_;
     QTimer* draw_timer_;
     std::vector<std::tuple<int, QString,
-        std::function<fastEIT::dtype::real(std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>>)>>>
+        std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>)>>>
         analysis_;
 };
 

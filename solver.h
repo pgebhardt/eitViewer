@@ -7,7 +7,7 @@
 #include <QJsonArray>
 #include <QTimer>
 #include <QTime>
-#include <fasteit/fasteit.h>
+#include <mpflow/mpflow.h>
 
 class Solver : public QObject {
     Q_OBJECT
@@ -24,21 +24,21 @@ protected slots:
 
 public:
     // accessors
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> measurement() {
-        return this->fasteit_solver()->measurement(0);
+    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> measurement() {
+        return this->eit_solver()->measurement(0);
     }
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> calculation() {
-        return this->fasteit_solver()->calculation(0);
+    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> calculation() {
+        return this->eit_solver()->calculation(0);
     }
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> gamma() {
-        return this->fasteit_solver()->gamma();
+    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> gamma() {
+        return this->eit_solver()->gamma();
     }
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> dgamma() {
-        return this->fasteit_solver()->dgamma();
+    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> dgamma() {
+        return this->eit_solver()->dgamma();
     }
-    std::shared_ptr<fastEIT::solver::Solver<fastEIT::numeric::SparseConjugate,
-        fastEIT::numeric::FastConjugate>> fasteit_solver() {
-        return this->fasteit_solver_;
+    std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::SparseConjugate,
+        mpFlow::numeric::FastConjugate>> eit_solver() {
+        return this->eit_solver_;
     }
     QThread* thread() { return this->thread_; }
     QTimer* solve_timer() { return this->solve_timer_; }
@@ -51,8 +51,8 @@ public:
 
 private:
     // member
-    std::shared_ptr<fastEIT::solver::Solver<fastEIT::numeric::SparseConjugate,
-        fastEIT::numeric::FastConjugate>> fasteit_solver_;
+    std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::SparseConjugate,
+        mpFlow::numeric::FastConjugate>> eit_solver_;
     QThread* thread_;
     QTimer* solve_timer_;
     QTime time_;

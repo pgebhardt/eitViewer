@@ -1,7 +1,7 @@
 #include "firfilter.h"
 
 FIRFilter::FIRFilter(unsigned int order, unsigned int step_size, int cuda_device,
-    std::shared_ptr<fastEIT::Matrix<fastEIT::dtype::real>> input, QObject* parent) :
+    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> input, QObject* parent) :
     QObject(parent), thread_(nullptr), timer_(nullptr), cuda_stream_(nullptr),
     input_(input), calc_array_(nullptr), output_(nullptr), order_(order), ring_buffer_pos_(0),
     step_size_(step_size) {
@@ -17,18 +17,18 @@ FIRFilter::FIRFilter(unsigned int order, unsigned int step_size, int cuda_device
         cublasSetStream(this->cublas_handle(), this->cuda_stream());
 
         // init buffer and filter response
-        this->filter_coefficients() = std::vector<fastEIT::dtype::real>(
-            this->order() + 1, 1.0 / (fastEIT::dtype::real)(this->order() + 1));
+        this->filter_coefficients() = std::vector<mpFlow::dtype::real>(
+            this->order() + 1, 1.0 / (mpFlow::dtype::real)(this->order() + 1));
 
-        for (fastEIT::dtype::index i = 0; i <= this->order(); ++i) {
-            this->buffer().push_back(std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
+        for (mpFlow::dtype::index i = 0; i <= this->order(); ++i) {
+            this->buffer().push_back(std::make_shared<mpFlow::Matrix<mpFlow::dtype::real>>(
                 this->input()->rows(), this->input()->columns(), this->cuda_stream()));
         }
 
         // create output matrix
-        this->calc_array_ = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
+        this->calc_array_ = std::make_shared<mpFlow::Matrix<mpFlow::dtype::real>>(
             this->input()->rows(), this->input()->columns(), this->cuda_stream());
-        this->output_ = std::make_shared<fastEIT::Matrix<fastEIT::dtype::real>>(
+        this->output_ = std::make_shared<mpFlow::Matrix<mpFlow::dtype::real>>(
             this->input()->rows(), this->input()->columns(), this->cuda_stream());
 
         // create timer for timing filter execution
@@ -57,7 +57,7 @@ void FIRFilter::calc_filter() {
         (-this->ring_buffer_pos()) % this->buffer().size()],
         this->cuda_stream());
 
-    for (fastEIT::dtype::index pos = 1; pos < this->buffer().size(); ++pos) {
+    for (mpFlow::dtype::index pos = 1; pos < this->buffer().size(); ++pos) {
         cublasSaxpy(this->cublas_handle(), this->buffer()[pos]->data_rows() *
             this->buffer()[pos]->data_columns(),
             &this->filter_coefficients()[

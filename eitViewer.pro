@@ -43,7 +43,7 @@ unix:!symbian: LIBS += -L/usr/local/cuda/lib64 -lcudart -lcublas -ldl
 INCLUDEPATH += /usr/local/cuda/include
 DEPENDPATH += /usr/local/cuda/include
 
-unix:!symbian: LIBS += -L/usr/local/lib -lfasteit
+unix:!symbian: LIBS += -L/usr/local/lib -lmpflow
 
 INCLUDEPATH += /usr/local/include
 DEPENDPATH += /usr/local/include
