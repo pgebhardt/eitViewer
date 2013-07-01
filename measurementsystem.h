@@ -10,7 +10,7 @@ class MeasurementSystem : public QObject
 {
     Q_OBJECT
 public:
-    explicit MeasurementSystem(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> measurement,
+    explicit MeasurementSystem(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> measurement,
         QObject* parent=nullptr);
 
 public slots:
@@ -20,10 +20,10 @@ public slots:
 public:
     // accessors
     QUdpSocket& measurement_system_socket() { return *this->measurement_system_socket_; }
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> measurement() {
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> measurement() {
         return this->measurement_;
     }
-    void setMeasurementMatrix(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> value) {
+    void setMeasurementMatrix(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> value) {
         this->measurement_ = value;
     }
     QThread* thread() { return this->thread_; }
@@ -31,7 +31,7 @@ public:
 // member
 private:
     QUdpSocket* measurement_system_socket_;
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> measurement_;
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> measurement_;
     QThread* thread_;
 };
 

@@ -39,7 +39,7 @@ protected:
     bool hasMultiGPU() { int devCount = 0; cudaGetDeviceCount(&devCount); return devCount > 1; }
     void cleanupSolver();
     void addAnalysis(QString name, QString unit, std::function<mpFlow::dtype::real(
-        std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>)> analysis);
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)> analysis);
 
 public:
     // accessor
@@ -48,7 +48,7 @@ public:
     Calibrator* calibrator() { return this->calibrator_; }
     QTimer& draw_timer() { return *this->draw_timer_; }
     std::vector<std::tuple<int, QString,
-        std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>)>>>&
+        std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>&
         analysis() { return this->analysis_; }
 
 private:
@@ -58,7 +58,7 @@ private:
     Calibrator* calibrator_;
     QTimer* draw_timer_;
     std::vector<std::tuple<int, QString,
-        std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>)>>>
+        std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>
         analysis_;
 };
 

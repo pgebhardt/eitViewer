@@ -11,7 +11,7 @@ class FIRFilter : public QObject {
     Q_OBJECT
 public:
     explicit FIRFilter(unsigned int order, unsigned int step_size, int cuda_device,
-        std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> input,
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> input,
         QObject *parent=nullptr);
     void restart(int step_size);
     
@@ -27,12 +27,12 @@ public:
     QTimer* timer() { return this->timer_; }
     cudaStream_t cuda_stream() { return this->cuda_stream_; }
     cublasHandle_t cublas_handle() { return this->cublas_handle_; }
-    std::vector<std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>>& buffer() {
+    std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>& buffer() {
         return this->buffer_;
     }
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> input() { return this->input_; }
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> calc_array() { return this->calc_array_; }
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> output() { return this->output_; }
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> input() { return this->input_; }
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> calc_array() { return this->calc_array_; }
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> output() { return this->output_; }
     std::vector<mpFlow::dtype::real>& filter_coefficients() {
         return this->filter_coefficients_;
     }
@@ -46,10 +46,10 @@ private:
     QTimer* timer_;
     cudaStream_t cuda_stream_;
     cublasHandle_t cublas_handle_;
-    std::vector<std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>> buffer_;
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> input_;
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> calc_array_;
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> output_;
+    std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>> buffer_;
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> input_;
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> calc_array_;
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> output_;
     std::vector<mpFlow::dtype::real> filter_coefficients_;
     unsigned int order_;
     mpFlow::dtype::index ring_buffer_pos_;

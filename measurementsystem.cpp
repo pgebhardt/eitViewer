@@ -1,7 +1,7 @@
 #include "measurementsystem.h"
 #include <QDataStream>
 
-MeasurementSystem::MeasurementSystem(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> measurement,
+MeasurementSystem::MeasurementSystem(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> measurement,
     QObject* parent) :
     QObject(parent), measurement_system_socket_(nullptr), measurement_(measurement) {
     // create separat thread

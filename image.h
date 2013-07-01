@@ -12,9 +12,9 @@ public:
     explicit Image(QWidget* parent=nullptr);
     virtual ~Image();
 
-    void init(std::shared_ptr<mpFlow::EIT::model::Model> model);
+    void init(std::shared_ptr<mpFlow::EIT::model::Base> model);
     void cleanup();
-    void draw(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> values,
+    void draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values,
         bool normalized);
 
 protected:
@@ -27,7 +27,7 @@ protected:
 
 public:
     // accessors
-    std::shared_ptr<mpFlow::EIT::model::Model> model() {
+    std::shared_ptr<mpFlow::EIT::model::Base> model() {
         return this->model_;
     }
     std::vector<mpFlow::dtype::real>& red() { return this->red_; }
@@ -41,7 +41,7 @@ public:
     mpFlow::dtype::real& normalization_factor() { return this->normalization_factor_; }
 
 private:
-    std::shared_ptr<mpFlow::EIT::model::Model> model_;
+    std::shared_ptr<mpFlow::EIT::model::Base> model_;
     GLfloat* vertices_;
     GLfloat* colors_;
     std::vector<mpFlow::dtype::real> red_;

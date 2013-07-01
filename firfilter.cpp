@@ -1,7 +1,7 @@
 #include "firfilter.h"
 
 FIRFilter::FIRFilter(unsigned int order, unsigned int step_size, int cuda_device,
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> input, QObject* parent) :
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> input, QObject* parent) :
     QObject(parent), thread_(nullptr), timer_(nullptr), cuda_stream_(nullptr),
     input_(input), calc_array_(nullptr), output_(nullptr), order_(order), ring_buffer_pos_(0),
     step_size_(step_size) {
@@ -21,14 +21,14 @@ FIRFilter::FIRFilter(unsigned int order, unsigned int step_size, int cuda_device
             this->order() + 1, 1.0 / (mpFlow::dtype::real)(this->order() + 1));
 
         for (mpFlow::dtype::index i = 0; i <= this->order(); ++i) {
-            this->buffer().push_back(std::make_shared<mpFlow::Matrix<mpFlow::dtype::real>>(
+            this->buffer().push_back(std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(
                 this->input()->rows(), this->input()->columns(), this->cuda_stream()));
         }
 
         // create output matrix
-        this->calc_array_ = std::make_shared<mpFlow::Matrix<mpFlow::dtype::real>>(
+        this->calc_array_ = std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(
             this->input()->rows(), this->input()->columns(), this->cuda_stream());
-        this->output_ = std::make_shared<mpFlow::Matrix<mpFlow::dtype::real>>(
+        this->output_ = std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(
             this->input()->rows(), this->input()->columns(), this->cuda_stream());
 
         // create timer for timing filter execution

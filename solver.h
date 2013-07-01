@@ -24,16 +24,16 @@ protected slots:
 
 public:
     // accessors
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> measurement() {
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> measurement() {
         return this->eit_solver()->measurement(0);
     }
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> calculation() {
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> calculation() {
         return this->eit_solver()->calculation(0);
     }
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> gamma() {
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> gamma() {
         return this->eit_solver()->gamma();
     }
-    std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> dgamma() {
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> dgamma() {
         return this->eit_solver()->dgamma();
     }
     std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::SparseConjugate,

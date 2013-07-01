@@ -33,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create measurement system
     this->measurement_system_ = new MeasurementSystem(
-        std::make_shared<mpFlow::Matrix<mpFlow::dtype::real>>(1, 1, nullptr));
+        std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(1, 1, nullptr));
 
     // TODO
     // init table widget
@@ -61,27 +61,27 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::initTable() {
-    this->addAnalysis("solve time:", "ms", [=](std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>) -> mpFlow::dtype::real {
+    this->addAnalysis("solve time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) -> mpFlow::dtype::real {
         return this->solver()->solve_time();
     });
-    this->addAnalysis("calibrate time:", "ms", [=](std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>) -> mpFlow::dtype::real {
+    this->addAnalysis("calibrate time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) -> mpFlow::dtype::real {
         return this->calibrator()->solve_time();
     });
-    this->addAnalysis("min:", "dB", [](std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
+    this->addAnalysis("min:", "dB", [](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
         mpFlow::dtype::real result = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
             result = std::min((*values)(i, 0), result);
         }
         return result;
     });
-    this->addAnalysis("max:", "dB", [](std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
+    this->addAnalysis("max:", "dB", [](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
         mpFlow::dtype::real result = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
             result = std::max((*values)(i, 0), result);
         }
         return result;
     });
-    this->addAnalysis("rms:", "dB", [=](std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
+    this->addAnalysis("rms:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
         mpFlow::dtype::real rms = 0.0;
         mpFlow::dtype::real area = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
@@ -108,7 +108,7 @@ void MainWindow::cleanupSolver() {
 }
 
 void MainWindow::addAnalysis(QString name, QString unit,
-    std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>>)> analysis) {
+    std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)> analysis) {
     // create new table row and table items
     this->ui->analysis_table->insertRow(this->ui->analysis_table->rowCount());
     this->ui->analysis_table->setItem(this->ui->analysis_table->rowCount() - 1, 0,
@@ -192,7 +192,7 @@ void MainWindow::on_actionLoad_Measurement_triggered() {
         if (file_name != "") {
             // load matrix
             try {
-                auto voltage = mpFlow::matrix::loadtxt<mpFlow::dtype::real>(file_name.toStdString(), nullptr);
+                auto voltage = mpFlow::numeric::matrix::loadtxt<mpFlow::dtype::real>(file_name.toStdString(), nullptr);
                 this->solver()->measurement()->copy(voltage, nullptr);
             } catch(const std::exception&) {
                 QMessageBox::information(this, this->windowTitle(), "Cannot load measurement matrix!");
@@ -211,7 +211,7 @@ void MainWindow::on_actionSave_Measurement_triggered() {
         if (file_name != "") {
             this->solver()->measurement()->copyToHost(nullptr);
             cudaStreamSynchronize(nullptr);
-            mpFlow::matrix::savetxt(file_name.toStdString(), this->solver()->measurement());
+            mpFlow::numeric::matrix::savetxt(file_name.toStdString(), this->solver()->measurement());
         }
     }
 }

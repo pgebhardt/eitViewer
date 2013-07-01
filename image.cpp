@@ -2,7 +2,7 @@
 #include <cmath>
 #include "image.h"
 
-void jet(const std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> values, mpFlow::dtype::real norm,
+void jet(const std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values, mpFlow::dtype::real norm,
          std::vector<mpFlow::dtype::real>* red, std::vector<mpFlow::dtype::real>* green,
          std::vector<mpFlow::dtype::real>* blue) {
     // calc colors
@@ -26,7 +26,7 @@ Image::~Image() {
     this->cleanup();
 }
 
-void Image::init(std::shared_ptr<mpFlow::EIT::model::Model> model) {
+void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model) {
     this->model_ = model;
 
     // cleanup
@@ -93,7 +93,7 @@ void Image::cleanup() {
     }
 }
 
-void Image::draw(std::shared_ptr<mpFlow::Matrix<mpFlow::dtype::real>> values,
+void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values,
     bool normalized) {
     // check for beeing initialized
     if ((!this->vertices_) || (!this->colors_) || (!this->model())) {

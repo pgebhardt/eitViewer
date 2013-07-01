@@ -3,8 +3,8 @@
 template <
     class type
 >
-std::shared_ptr<mpFlow::Matrix<type>> matrixFromJsonArray(const QJsonArray& array, cudaStream_t cuda_stream) {
-    auto matrix = std::make_shared<mpFlow::Matrix<type>>(array.size(), array.first().toArray().size(),
+std::shared_ptr<mpFlow::numeric::Matrix<type>> matrixFromJsonArray(const QJsonArray& array, cudaStream_t cuda_stream) {
+    auto matrix = std::make_shared<mpFlow::numeric::Matrix<type>>(array.size(), array.first().toArray().size(),
         cuda_stream);
     for (mpFlow::dtype::index row = 0; row < matrix->rows(); ++row)
     for (mpFlow::dtype::index column = 0; column < matrix->columns(); ++column) {
@@ -46,7 +46,7 @@ Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
                 config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray(), this->cuda_stream());
 
             // create mesh
-            auto mesh = mpFlow::mesh::quadraticBasis(nodes, elements, boundary,
+            auto mesh = mpFlow::numeric::irregularMesh::quadraticBasis(nodes, elements, boundary,
                 config["model"].toObject()["mesh"].toObject()["radius"].toDouble(),
                 config["model"].toObject()["mesh"].toObject()["height"].toDouble(),
                 this->cuda_stream());
