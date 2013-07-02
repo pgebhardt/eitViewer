@@ -25,10 +25,10 @@ protected slots:
 public:
     // accessors
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> measurement() {
-        return this->eit_solver()->measurement(0);
+        return this->eit_solver()->measurement()[0];
     }
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> calculation() {
-        return this->eit_solver()->calculation(0);
+        return this->eit_solver()->calculation()[0];
     }
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> gamma() {
         return this->eit_solver()->gamma();
@@ -36,8 +36,8 @@ public:
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> dgamma() {
         return this->eit_solver()->dgamma();
     }
-    std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::SparseConjugate,
-        mpFlow::numeric::FastConjugate>> eit_solver() {
+    std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::Newton<
+        mpFlow::numeric::FastConjugate>>> eit_solver() {
         return this->eit_solver_;
     }
     QThread* thread() { return this->thread_; }
@@ -51,8 +51,8 @@ public:
 
 private:
     // member
-    std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::SparseConjugate,
-        mpFlow::numeric::FastConjugate>> eit_solver_;
+    std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::Newton<
+        mpFlow::numeric::FastConjugate>>> eit_solver_;
     QThread* thread_;
     QTimer* solve_timer_;
     QTime time_;
