@@ -72,7 +72,7 @@ Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
 
             // create and init solver
             this->eit_solver_ = std::make_shared<mpFlow::EIT::solver::Solver<
-                    mpFlow::numeric::Newton<mpFlow::numeric::FastConjugate>>>(model, 1,
+                    mpFlow::numeric::FastConjugate>>(model, 1,
                 config["solver"].toObject()["regularization_factor"].toDouble(),
                 this->cublas_handle(), this->cuda_stream());
             this->eit_solver()->preSolve(this->cublas_handle(), this->cuda_stream());
