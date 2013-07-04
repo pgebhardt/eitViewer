@@ -43,6 +43,7 @@ MainWindow::MainWindow(QWidget *parent) :
     if (this->hasMultiGPU()) {
         this->ui->actionAuto_Calibrate->setEnabled(true);
         this->ui->actionCalibrator_Settings->setEnabled(true);
+        this->ui->actionCalibrator_Data->setEnabled(true);
     }
 }
 
@@ -64,9 +65,11 @@ void MainWindow::initTable() {
     this->addAnalysis("solve time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) -> mpFlow::dtype::real {
         return this->solver()->solve_time();
     });
-    this->addAnalysis("calibrate time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) -> mpFlow::dtype::real {
-        return this->calibrator()->solve_time();
-    });
+    if (this->hasMultiGPU()) {
+        this->addAnalysis("calibrate time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) -> mpFlow::dtype::real {
+            return this->calibrator()->solve_time();
+        });
+    }
     this->addAnalysis("min:", "dB", [](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
         mpFlow::dtype::real result = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
