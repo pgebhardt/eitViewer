@@ -15,38 +15,23 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <property name="leftMargin">
-     <number>0</number>
-    </property>
-    <property name="topMargin">
-     <number>0</number>
-    </property>
-    <property name="rightMargin">
-     <number>0</number>
-    </property>
-    <property name="bottomMargin">
+    <property name="margin">
      <number>0</number>
     </property>
     <item row="0" column="0">
      <widget class="QWidget" name="container" native="true">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <layout class="QGridLayout" name="gridLayout_3" columnstretch="1,0">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
-        <number>0</number>
-       </property>
        <property name="horizontalSpacing">
         <number>0</number>
        </property>
        <property name="verticalSpacing">
         <number>6</number>
+       </property>
+       <property name="margin">
+        <number>0</number>
        </property>
        <item row="0" column="1">
         <widget class="QTableWidget" name="analysis_table">
@@ -110,7 +95,7 @@
      <x>0</x>
      <y>0</y>
      <width>1054</width>
-     <height>22</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuSolver">
@@ -129,6 +114,7 @@
      <string>View</string>
     </property>
     <addaction name="actionAuto_Normalize"/>
+    <addaction name="actionAnalysis_Table"/>
     <addaction name="actionCalibrator_Data"/>
     <addaction name="actionSave_Image"/>
    </widget>
@@ -259,6 +245,17 @@
    </property>
    <property name="text">
     <string>Calibrator Settings</string>
+   </property>
+  </action>
+  <action name="actionAnalysis_Table">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Analysis Table</string>
    </property>
   </action>
  </widget>

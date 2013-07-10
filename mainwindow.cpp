@@ -239,6 +239,10 @@ void MainWindow::on_actionCalibrator_Settings_triggered() {
     }
 }
 
+void MainWindow::on_actionAnalysis_Table_toggled(bool arg1) {
+    this->ui->analysis_table->setVisible(arg1);
+}
+
 void MainWindow::on_actionSave_Image_triggered() {
     // get save file name
     QString file_name = QFileDialog::getSaveFileName(
