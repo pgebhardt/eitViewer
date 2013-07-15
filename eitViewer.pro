@@ -30,9 +30,9 @@ FORMS    += mainwindow.ui \
     calibratordialog.ui
 
 CONFIG += c++11
+QMAKE_CXXFLAGS += -O3
 
 macx {
-    QMAKE_CXXFLAGS += -stdlib=libc++
     QMAKE_LIBS += -lc++
     QMAKE_LIBS += -Xlinker -rpath /usr/local/cuda/lib
     QMAKE_CXXFLAGS += -mmacosx-version-min=10.7
