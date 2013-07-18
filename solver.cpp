@@ -15,6 +15,86 @@ std::shared_ptr<mpFlow::numeric::Matrix<type>> matrixFromJsonArray(const QJsonAr
     return matrix;
 }
 
+std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::FastConjugate>> createSolverFromConfig(
+    const QJsonObject &config, cublasHandle_t handle, cudaStream_t stream) {
+    // load mesh from config
+    auto nodes = matrixFromJsonArray<mpFlow::dtype::real>(
+        config["model"].toObject()["mesh"].toObject()["nodes"].toArray(), stream);
+    auto elements = matrixFromJsonArray<mpFlow::dtype::index>(
+        config["model"].toObject()["mesh"].toObject()["elements"].toArray(), stream);
+    auto boundary = matrixFromJsonArray<mpFlow::dtype::index>(
+        config["model"].toObject()["mesh"].toObject()["boundary"].toArray(), stream);
+
+    // load pattern from config
+    auto drive_pattern = matrixFromJsonArray<mpFlow::dtype::real>(
+        config["model"].toObject()["source"].toObject()["drive_pattern"].toArray(), stream);
+    auto measurement_pattern = matrixFromJsonArray<mpFlow::dtype::real>(
+        config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray(), stream);
+
+    // read out type of basis function
+    auto basis_function_type = config["model"].toObject()["basis_function"].toString();
+
+    // create mesh
+    std::shared_ptr<mpFlow::numeric::IrregularMesh> mesh = nullptr;
+    if (basis_function_type == "quadratic") {
+        mesh = mpFlow::numeric::irregularMesh::quadraticBasis(nodes, elements, boundary,
+            config["model"].toObject()["mesh"].toObject()["radius"].toDouble(),
+            config["model"].toObject()["mesh"].toObject()["height"].toDouble(),
+            stream);
+    } else {
+        mesh = std::make_shared<mpFlow::numeric::IrregularMesh>(nodes, elements, boundary,
+            config["model"].toObject()["mesh"].toObject()["radius"].toDouble(),
+            config["model"].toObject()["mesh"].toObject()["height"].toDouble());
+    }
+
+    // create electrodes
+    auto electrodes = mpFlow::EIT::electrodes::circularBoundary(
+        config["model"].toObject()["electrodes"].toObject()["count"].toDouble(),
+        std::make_tuple(config["model"].toObject()["electrodes"].toObject()["width"].toDouble(),
+            config["model"].toObject()["electrodes"].toObject()["height"].toDouble()),
+        1.0, mesh->radius());
+
+    // read out current
+    std::vector<mpFlow::dtype::real> current(drive_pattern->columns());
+    if (config["model"].toObject()["source"].toObject()["current"].isArray()) {
+        for (mpFlow::dtype::index i = 0; i < drive_pattern->columns(); ++i) {
+            current[i] = config["model"].toObject()["source"].toObject()["current"].toArray()[i].toDouble();
+        }
+    } else {
+        std::fill(current.begin(), current.end(),
+            config["model"].toObject()["source"].toObject()["current"].toDouble());
+    }
+
+    // create source
+    std::shared_ptr<mpFlow::EIT::source::Source> source = nullptr;
+    if (basis_function_type == "quadratic") {
+        source = std::make_shared<mpFlow::EIT::source::Current<mpFlow::EIT::basis::Quadratic>>(
+            current, mesh, electrodes, config["model"].toObject()["components_count"].toDouble(),
+            drive_pattern, measurement_pattern, handle, stream);
+    } else {
+        source = std::make_shared<mpFlow::EIT::source::Current<mpFlow::EIT::basis::Linear>>(
+            current, mesh, electrodes, config["model"].toObject()["components_count"].toDouble(),
+            drive_pattern, measurement_pattern, handle, stream);
+    }
+
+    // create model
+    std::shared_ptr<mpFlow::EIT::model::Base> model = nullptr;
+    if (basis_function_type == "quadratic") {
+        model = std::make_shared<mpFlow::EIT::Model<mpFlow::EIT::basis::Quadratic>>(
+            mesh, electrodes, source, config["model"].toObject()["sigma_ref"].toDouble(),
+            config["model"].toObject()["components_count"].toDouble(), handle, stream);
+    } else {
+        model = std::make_shared<mpFlow::EIT::Model<mpFlow::EIT::basis::Linear>>(
+            mesh, electrodes, source, config["model"].toObject()["sigma_ref"].toDouble(),
+            config["model"].toObject()["components_count"].toDouble(), handle, stream);
+    }
+
+    // create and init solver
+    return std::make_shared<mpFlow::EIT::solver::Solver<mpFlow::numeric::FastConjugate>>(
+        model, 1, config["solver"].toObject()["regularization_factor"].toDouble(),
+        handle, stream);
+}
+
 Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
     QObject(parent), cuda_stream_(nullptr), cublas_handle_(nullptr), cuda_device_(cuda_device),
     step_size_(20) {
@@ -31,50 +111,9 @@ Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
 
         bool success = true;
         try {
-            // load mesh from config
-            auto nodes = matrixFromJsonArray<mpFlow::dtype::real>(
-                config["model"].toObject()["mesh"].toObject()["nodes"].toArray(), this->cuda_stream());
-            auto elements = matrixFromJsonArray<mpFlow::dtype::index>(
-                config["model"].toObject()["mesh"].toObject()["elements"].toArray(), this->cuda_stream());
-            auto boundary = matrixFromJsonArray<mpFlow::dtype::index>(
-                config["model"].toObject()["mesh"].toObject()["boundary"].toArray(), this->cuda_stream());
-
-            // load pattern from config
-            auto drive_pattern = matrixFromJsonArray<mpFlow::dtype::real>(
-                config["model"].toObject()["source"].toObject()["drive_pattern"].toArray(), this->cuda_stream());
-            auto measurement_pattern = matrixFromJsonArray<mpFlow::dtype::real>(
-                config["model"].toObject()["source"].toObject()["measurement_pattern"].toArray(), this->cuda_stream());
-
-            // create mesh
-            auto mesh = mpFlow::numeric::irregularMesh::quadraticBasis(nodes, elements, boundary,
-                config["model"].toObject()["mesh"].toObject()["radius"].toDouble(),
-                config["model"].toObject()["mesh"].toObject()["height"].toDouble(),
-                this->cuda_stream());
-
-            // create electrodes
-            auto electrodes = mpFlow::EIT::electrodes::circularBoundary(
-                config["model"].toObject()["electrodes"].toObject()["count"].toDouble(),
-                std::make_tuple(config["model"].toObject()["electrodes"].toObject()["width"].toDouble(),
-                    config["model"].toObject()["electrodes"].toObject()["height"].toDouble()),
-                1.0, mesh->radius());
-
-            // create source
-            auto source = std::make_shared<mpFlow::EIT::source::Current<mpFlow::EIT::basis::Quadratic>>(
-                config["model"].toObject()["source"].toObject()["current"].toDouble(),
-                mesh, electrodes, config["model"].toObject()["components_count"].toDouble(),
-                drive_pattern, measurement_pattern, this->cublas_handle(), this->cuda_stream());
-
-            // create model
-            auto model = std::make_shared<mpFlow::EIT::Model<mpFlow::EIT::basis::Quadratic>>(
-                mesh, electrodes, source, config["model"].toObject()["sigma_ref"].toDouble(),
-                config["model"].toObject()["components_count"].toDouble(), this->cublas_handle(),
-                this->cuda_stream());
-
             // create and init solver
-            this->eit_solver_ = std::make_shared<mpFlow::EIT::solver::Solver<
-                    mpFlow::numeric::FastConjugate>>(model, 1,
-                config["solver"].toObject()["regularization_factor"].toDouble(),
-                this->cublas_handle(), this->cuda_stream());
+            this->eit_solver_ = createSolverFromConfig(config, this->cublas_handle(),
+                this->cuda_stream());
             this->eit_solver()->preSolve(this->cublas_handle(), this->cuda_stream());
             this->measurement()->copyToHost(this->cuda_stream());
 

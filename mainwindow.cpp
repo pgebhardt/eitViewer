@@ -261,7 +261,7 @@ void MainWindow::solver_initialized(bool success) {
     if (success) {
         // init image
         this->draw_timer().stop();
-        this->ui->image->init(this->solver()->eit_solver()->model());
+        this->ui->image->init(this->solver()->eit_solver()->forward_solver()->model());
         this->ui->image->draw(this->solver()->eit_solver()->dgamma(),
             this->ui->actionAuto_Normalize->isChecked());
         this->draw_timer().start(20);
