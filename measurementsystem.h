@@ -16,15 +16,15 @@ public:
 public slots:
     void init();
     virtual void readyRead();
+    void setMeasurementMatrix(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> value) {
+        this->measurement_ = value;
+    }
 
 public:
     // accessors
     QUdpSocket& measurement_system_socket() { return *this->measurement_system_socket_; }
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> measurement() {
         return this->measurement_;
-    }
-    void setMeasurementMatrix(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> value) {
-        this->measurement_ = value;
     }
     QThread* thread() { return this->thread_; }
 

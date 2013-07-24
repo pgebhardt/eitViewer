@@ -145,8 +145,8 @@ void MainWindow::draw() {
 
 void MainWindow::on_actionOpen_triggered() {
     // get open file name
-    QString file_name = QFileDialog::getOpenFileName(this, "Load Solver", "",
-                                                     "Solver File (*.conf)");
+    QString file_name = QFileDialog::getOpenFileName(
+        this, "Load Solver", "", "Solver File (*.conf)");
 
     // load solver
     if (file_name != "") {
@@ -266,8 +266,13 @@ void MainWindow::solver_initialized(bool success) {
             this->ui->actionAuto_Normalize->isChecked());
         this->draw_timer().start(20);
 
-        // set correct matrix for measurement system
-        this->measurement_system()->setMeasurementMatrix(this->solver()->measurement());
+        // set correct matrix for measurement system with meta object method call
+        // to ensure matrix update not during data read or write
+        qRegisterMetaType<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>(
+            "std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>");
+        QMetaObject::invokeMethod(this->measurement_system(), "setMeasurementMatrix",
+            Qt::AutoConnection, Q_ARG(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>,
+                this->solver()->measurement()));
     } else {
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot load solver from config!"));
