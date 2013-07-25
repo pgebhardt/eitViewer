@@ -24,6 +24,7 @@ public:
 private slots:
     void draw();
     void on_actionOpen_triggered();
+    void on_actionAbout_triggered();
     void on_actionExit_triggered();
     void on_actionLoad_Measurement_triggered();
     void on_actionSave_Measurement_triggered();

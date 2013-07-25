@@ -124,6 +124,9 @@
     </property>
     <addaction name="actionOpen"/>
     <addaction name="separator"/>
+    <addaction name="separator"/>
+    <addaction name="actionAbout"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <addaction name="menuFile"/>
@@ -256,6 +259,11 @@
    </property>
    <property name="text">
     <string>Analysis Table</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
    </property>
   </action>
  </widget>

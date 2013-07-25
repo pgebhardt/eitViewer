@@ -181,6 +181,11 @@ void MainWindow::on_actionOpen_triggered() {
     }
 }
 
+
+void MainWindow::on_actionAbout_triggered() {
+    QMessageBox::about(this, this->windowTitle(), tr("Version: ") + APP_REVISION);
+}
+
 void MainWindow::on_actionExit_triggered() {
     // quit application
     this->close();
