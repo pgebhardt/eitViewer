@@ -130,7 +130,7 @@
     <property name="title">
      <string>Info</string>
     </property>
-    <addaction name="actionAbout"/>
+    <addaction name="actionVersion"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuSolver"/>
@@ -265,9 +265,9 @@
     <string>Analysis Table</string>
    </property>
   </action>
-  <action name="actionAbout">
+  <action name="actionVersion">
    <property name="text">
-    <string>About</string>
+    <string>Version</string>
    </property>
   </action>
  </widget>
