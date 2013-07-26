@@ -24,7 +24,6 @@ public:
 private slots:
     void draw();
     void on_actionOpen_triggered();
-    void on_actionAbout_triggered();
     void on_actionExit_triggered();
     void on_actionLoad_Measurement_triggered();
     void on_actionSave_Measurement_triggered();
@@ -33,6 +32,7 @@ private slots:
     void on_actionCalibrator_Settings_triggered();
     void on_actionAnalysis_Table_toggled(bool arg1);
     void on_actionSave_Image_triggered();
+    void on_actionAbout_triggered();
     void solver_initialized(bool success);
     void calibrator_initialized(bool success);
 

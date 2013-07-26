@@ -182,10 +182,6 @@ void MainWindow::on_actionOpen_triggered() {
 }
 
 
-void MainWindow::on_actionAbout_triggered() {
-    QMessageBox::about(this, this->windowTitle(), tr("Version: ") + APP_REVISION);
-}
-
 void MainWindow::on_actionExit_triggered() {
     // quit application
     this->close();
@@ -260,6 +256,10 @@ void MainWindow::on_actionSave_Image_triggered() {
 
         bitmap.save(file_name, "PNG");
     }
+}
+
+void MainWindow::on_actionAbout_triggered() {
+    QMessageBox::about(this, this->windowTitle(), tr("Version: ") + APP_REVISION);
 }
 
 void MainWindow::solver_initialized(bool success) {
