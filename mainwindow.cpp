@@ -259,6 +259,7 @@ void MainWindow::on_actionSave_Image_triggered() {
 }
 
 void MainWindow::on_actionAbout_triggered() {
+    // Show about box with version number
     QMessageBox::about(this, this->windowTitle(), tr("Version: ") + APP_REVISION);
 }
 
