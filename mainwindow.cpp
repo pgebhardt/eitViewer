@@ -260,7 +260,8 @@ void MainWindow::on_actionSave_Image_triggered() {
 
 void MainWindow::on_actionVersion_triggered() {
     // Show about box with version number
-    QMessageBox::about(this, this->windowTitle(), tr("Version: ") + APP_REVISION);
+    QMessageBox::about(this, this->windowTitle(), tr("%1: %2\nmpFlow: %3").arg(
+        this->windowTitle(), GIT_VERSION, mpFlow::version::getVersionString()));
 }
 
 void MainWindow::solver_initialized(bool success) {

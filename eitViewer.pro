@@ -8,7 +8,7 @@ QT       += core widgets opengl network
 
 # get version number
 REVISION = $$system(git describe --tags --long)
-DEFINES += APP_REVISION=\\\"$$REVISION\\\"
+DEFINES += GIT_VERSION=\\\"$$REVISION\\\"
 
 TARGET = eitViewer
 TEMPLATE = app
