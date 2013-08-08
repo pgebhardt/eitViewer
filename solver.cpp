@@ -1,4 +1,5 @@
 #include "solver.h"
+#include <distmesh/distmesh.h>
 
 template <
     class type
@@ -15,16 +16,29 @@ std::shared_ptr<mpFlow::numeric::Matrix<type>> matrixFromJsonArray(const QJsonAr
     return matrix;
 }
 
-std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::FastConjugate>> createSolverFromConfig(
-    const QJsonObject &config, cublasHandle_t handle, cudaStream_t stream) {
-    // load mesh from config
-    auto nodes = matrixFromJsonArray<mpFlow::dtype::real>(
-        config["model"].toObject()["mesh"].toObject()["nodes"].toArray(), stream);
-    auto elements = matrixFromJsonArray<mpFlow::dtype::index>(
-        config["model"].toObject()["mesh"].toObject()["elements"].toArray(), stream);
-    auto boundary = matrixFromJsonArray<mpFlow::dtype::index>(
-        config["model"].toObject()["mesh"].toObject()["boundary"].toArray(), stream);
+template <
+    class mpflow_type,
+    class distmesh_type
+>
+std::shared_ptr<mpFlow::numeric::Matrix<mpflow_type>> matrixFromDistmeshArray(
+    std::shared_ptr<distmesh::dtype::array<distmesh_type>> array, cudaStream_t cuda_stream) {
+    auto matrix = std::make_shared<mpFlow::numeric::Matrix<mpflow_type>>(array->rows(),
+        array->cols(), cuda_stream);
+    for (mpFlow::dtype::index row = 0; row < matrix->rows(); ++row)
+    for (mpFlow::dtype::index column = 0; column < matrix->columns(); ++column) {
+        (*matrix)(row, column) = (*array)(row, column);
+    }
+    matrix->copyToDevice(cuda_stream);
 
+    return matrix;
+}
+
+std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::FastConjugate>>
+    createSolverFromConfig(const QJsonObject &config,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> nodes,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
+    cublasHandle_t handle, cudaStream_t stream) {
     // load pattern from config
     auto drive_pattern = matrixFromJsonArray<mpFlow::dtype::real>(
         config["model"].toObject()["source"].toObject()["drive_pattern"].toArray(), stream);
@@ -95,7 +109,49 @@ std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::FastConjugate>> cre
         handle, stream);
 }
 
-Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
+std::tuple<
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>>,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>>>
+    Solver::createMeshFromConfig(const QJsonObject& config, cudaStream_t stream) {
+    // extract parameter from config
+    distmesh::dtype::real radius = config["radius"].toDouble();
+    distmesh::dtype::array<distmesh::dtype::real> bounding_box(2, 2);
+    distmesh::dtype::array<distmesh::dtype::real> midpoints(1, 2);
+    bounding_box << -1.1 * radius, 1.1 * radius, -1.1 * radius, 1.1 * radius;
+    midpoints.fill(0.0);
+
+    // create mesh using libdistmesh
+    std::shared_ptr<distmesh::dtype::array<distmesh::dtype::real>> nodes = nullptr;
+    std::shared_ptr<distmesh::dtype::array<distmesh::dtype::index>> elements = nullptr;
+    std::tie(nodes, elements) = distmesh::distmesh(
+        distmesh::distance_functions::circular(midpoints, radius),
+        [=](distmesh::dtype::array<distmesh::dtype::real>& points) {
+            distmesh::dtype::array<distmesh::dtype::real> result(points.rows(), 1);
+            result = 1.0 - 0.6 * points.square().rowwise().sum().sqrt() / radius;
+            return result;
+        }, 0.05 * radius, bounding_box);
+
+    // get boundary
+    std::shared_ptr<distmesh::dtype::array<distmesh::dtype::index>> boundary = nullptr;
+    boundary = distmesh::boundedges(elements);
+
+    // convert to mpflow matrix
+    auto nodes_gpu = matrixFromDistmeshArray<mpFlow::dtype::real, distmesh::dtype::real>(
+        nodes, stream);
+    auto elements_gpu = matrixFromDistmeshArray<mpFlow::dtype::index, distmesh::dtype::index>(
+        elements, stream);
+    auto boundary_gpu = matrixFromDistmeshArray<mpFlow::dtype::index, distmesh::dtype::index>(
+        boundary, stream);
+
+    return std::make_tuple(nodes_gpu, elements_gpu, boundary_gpu);
+}
+
+Solver::Solver(const QJsonObject& config,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> nodes,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
+    int cuda_device, QObject *parent) :
     QObject(parent), cuda_stream_(nullptr), cublas_handle_(nullptr), cuda_device_(cuda_device),
     step_size_(20) {
     // init separate thread
@@ -112,8 +168,8 @@ Solver::Solver(const QJsonObject& config, int cuda_device, QObject *parent) :
         bool success = true;
         try {
             // create and init solver
-            this->eit_solver_ = createSolverFromConfig(config, this->cublas_handle(),
-                this->cuda_stream());
+            this->eit_solver_ = createSolverFromConfig(config, nodes, elements,
+                boundary, this->cublas_handle(), this->cuda_stream());
             this->eit_solver()->preSolve(this->cublas_handle(), this->cuda_stream());
             this->measurement()->copyToHost(this->cuda_stream());
 

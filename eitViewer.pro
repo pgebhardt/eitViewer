@@ -42,7 +42,7 @@ macx {
     QMAKE_CXXFLAGS += -mmacosx-version-min=10.7
 }
 
-unix:!symbian: LIBS += -L/usr/local/cuda/lib64 -lcudart -lcublas -ldl
+unix:!symbian: LIBS += -L/usr/local/cuda/lib64 -lcudart -lcublas -ldl -ldistmesh
 
 INCLUDEPATH += /usr/local/cuda/include
 DEPENDPATH += /usr/local/cuda/include
@@ -52,3 +52,7 @@ QMAKE_LIBS += -Wl,-rpath=/usr/local/lib
 
 INCLUDEPATH += /usr/local/include
 DEPENDPATH += /usr/local/include
+INCLUDEPATH += /usr/local/include/eigen3
+DEPENDPATH += /usr/local/include/eigen3
+INCLUDEPATH += /usr/include/eigen3
+DEPENDPATH += /usr/include/eigen3

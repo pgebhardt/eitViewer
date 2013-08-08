@@ -1,9 +1,12 @@
 #include "calibrator.h"
 
 Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> nodes,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
     int cuda_device, QObject *parent)
-    : Solver(config, cuda_device, parent), differential_solver_(differential_solver),
-    filter_(nullptr), running_(false) {
+    : Solver(config, nodes, elements, boundary, cuda_device, parent),
+    differential_solver_(differential_solver), filter_(nullptr), running_(false) {
     connect(this, &Calibrator::initialized, [=](bool success) {
         if (success) {
             // set regularization factor

@@ -166,13 +166,19 @@ void MainWindow::on_actionOpen_triggered() {
         auto json_document = QJsonDocument::fromJson(str.toUtf8());
         auto config = json_document.object();
 
+        // create same mesh for both solver and calibrator
+        auto mesh = Solver::createMeshFromConfig(
+            config["model"].toObject()["mesh"].toObject(), nullptr);
+
         // create new Solver from config
-        this->solver_ = new Solver(config, 0);
+        this->solver_ = new Solver(config, std::get<0>(mesh), std::get<1>(mesh),
+            std::get<2>(mesh), 0);
         connect(this->solver(), &Solver::initialized, this, &MainWindow::solver_initialized);
 
         // create auto calibrator
         if (this->hasMultiGPU()) {
-            this->calibrator_ = new Calibrator(this->solver(), config, 1);
+            this->calibrator_ = new Calibrator(this->solver(), config,
+                std::get<0>(mesh), std::get<1>(mesh), std::get<2>(mesh), 1);
             connect(this->solver(), &Calibrator::initialized, this,
                 &MainWindow::calibrator_initialized);
         }

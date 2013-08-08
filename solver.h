@@ -12,9 +12,17 @@
 class Solver : public QObject {
     Q_OBJECT
 public:
-    explicit Solver(const QJsonObject& config, int cuda_device=0,
-        QObject* parent=nullptr);
+    explicit Solver(const QJsonObject& config,
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> nodes,
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
+        int cuda_device=0, QObject* parent=nullptr);
     void restart(int step_size);
+    static std::tuple<
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>,
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>>,
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>>>
+        createMeshFromConfig(const QJsonObject& config, cudaStream_t stream);
 
 signals:
     void initialized(bool success);

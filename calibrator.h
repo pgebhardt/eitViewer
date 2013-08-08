@@ -8,6 +8,9 @@ class Calibrator : public Solver {
     Q_OBJECT
 public:
     explicit Calibrator(Solver* differential_solver, const QJsonObject& config,
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> nodes,
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
+        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
         int cuda_device=0, QObject* parent=nullptr);
     virtual ~Calibrator();
 
