@@ -19,7 +19,7 @@ void jet(const std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> val
 Image::Image(QWidget* parent) :
     QGLWidget(parent), model_(nullptr), vertices_(nullptr), colors_(nullptr),
     red_(0), green_(0), blue_(0), node_area_(0), element_area_(0), x_angle_(0.0),
-    z_angle_(0.0), normalization_factor_(1.0) {
+    z_angle_(0.0), threashold_(0.1) {
 }
 
 Image::~Image() {
@@ -93,8 +93,7 @@ void Image::cleanup() {
     }
 }
 
-void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values,
-    bool normalized) {
+void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) {
     // check for beeing initialized
     if ((!this->vertices_) || (!this->colors_) || (!this->model())) {
         return;
@@ -111,7 +110,7 @@ void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> v
     }
 
     // calc norm
-    mpFlow::dtype::real norm = normalized ? std::max(-min_value, max_value) : this->normalization_factor();
+    mpFlow::dtype::real norm = std::max(std::max(-min_value, max_value), this->threashold());
 
     // check norm to prevent division by zero
     norm = norm == 0.0 ? 1.0 : norm;
@@ -242,5 +241,6 @@ void Image::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void Image::wheelEvent(QWheelEvent* event) {
-    this->normalization_factor() *= event->delta() > 0 ? 2.0 : 0.5;
+    this->threashold() += event->delta() > 0 ? 0.05 :
+            this->threashold() >= 0.05 ? -0.05 : 0.0;
 }

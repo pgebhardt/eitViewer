@@ -14,8 +14,7 @@ public:
 
     void init(std::shared_ptr<mpFlow::EIT::model::Base> model);
     void cleanup();
-    void draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values,
-        bool normalized);
+    void draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values);
 
 protected:
     virtual void initializeGL();
@@ -38,7 +37,7 @@ public:
     mpFlow::dtype::real& x_angle() { return this->x_angle_; }
     mpFlow::dtype::real& z_angle() { return this->z_angle_; }
     std::tuple<int, int>& old_mouse_pos() { return this->old_mouse_pos_; }
-    mpFlow::dtype::real& normalization_factor() { return this->normalization_factor_; }
+    mpFlow::dtype::real& threashold() { return this->threashold_; }
 
 private:
     std::shared_ptr<mpFlow::EIT::model::Base> model_;
@@ -52,7 +51,7 @@ private:
     mpFlow::dtype::real x_angle_;
     mpFlow::dtype::real z_angle_;
     std::tuple<int, int> old_mouse_pos_;
-    mpFlow::dtype::real normalization_factor_;
+    mpFlow::dtype::real threashold_;
 };
 
 #endif // IMAGE_H

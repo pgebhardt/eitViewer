@@ -62,14 +62,17 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::initTable() {
-    this->addAnalysis("solve time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) -> mpFlow::dtype::real {
+    this->addAnalysis("solve time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
         return this->solver()->solve_time();
     });
     if (this->hasMultiGPU()) {
-        this->addAnalysis("calibrate time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) -> mpFlow::dtype::real {
+        this->addAnalysis("calibrate time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
             return this->calibrator()->solve_time();
         });
     }
+    this->addAnalysis("normalization threashold:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
+        return this->ui->image->threashold();
+    });
     this->addAnalysis("min:", "dB", [](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
         mpFlow::dtype::real result = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
@@ -133,7 +136,7 @@ void MainWindow::draw() {
         }
 
         // update image
-        this->ui->image->draw(gamma, this->ui->actionAuto_Normalize->isChecked());
+        this->ui->image->draw(gamma);
 
         // evaluate analysis functions
         for (const auto& analysis : this->analysis()) {
@@ -275,8 +278,7 @@ void MainWindow::solver_initialized(bool success) {
         // init image
         this->draw_timer().stop();
         this->ui->image->init(this->solver()->eit_solver()->forward_solver()->model());
-        this->ui->image->draw(this->solver()->eit_solver()->dgamma(),
-            this->ui->actionAuto_Normalize->isChecked());
+        this->ui->image->draw(this->solver()->eit_solver()->dgamma());
         this->draw_timer().start(20);
 
         // set correct matrix for measurement system with meta object method call
