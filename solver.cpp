@@ -117,20 +117,17 @@ std::tuple<
     // extract parameter from config
     distmesh::dtype::real radius = config["radius"].toDouble();
     distmesh::dtype::array<distmesh::dtype::real> bounding_box(2, 2);
-    distmesh::dtype::array<distmesh::dtype::real> midpoints(1, 2);
     bounding_box << -1.1 * radius, 1.1 * radius, -1.1 * radius, 1.1 * radius;
-    midpoints.fill(0.0);
 
     // create mesh using libdistmesh
     std::shared_ptr<distmesh::dtype::array<distmesh::dtype::real>> nodes = nullptr;
     std::shared_ptr<distmesh::dtype::array<distmesh::dtype::index>> elements = nullptr;
     std::tie(nodes, elements) = distmesh::distmesh(
-        distmesh::distance_functions::circular(midpoints, radius),
+        distmesh::distance_functions::circular(radius),
         [=](distmesh::dtype::array<distmesh::dtype::real>& points) {
-            distmesh::dtype::array<distmesh::dtype::real> result(points.rows(), 1);
-            result = 1.0 - 0.6 * points.square().rowwise().sum().sqrt() / radius;
-            return result;
-        }, 0.05 * radius, bounding_box);
+            return (1.0 - (1.0 - config["outer_edge_length"].toDouble() / config["inner_edge_length"].toDouble()) *
+                    points.square().rowwise().sum().sqrt() / radius).eval();
+        }, config["outer_edge_length"].toDouble(), bounding_box);
 
     // get boundary
     std::shared_ptr<distmesh::dtype::array<distmesh::dtype::index>> boundary = nullptr;
