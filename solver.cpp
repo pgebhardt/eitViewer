@@ -21,12 +21,12 @@ template <
     class distmesh_type
 >
 std::shared_ptr<mpFlow::numeric::Matrix<mpflow_type>> matrixFromDistmeshArray(
-    std::shared_ptr<distmesh::dtype::array<distmesh_type>> array, cudaStream_t cuda_stream) {
-    auto matrix = std::make_shared<mpFlow::numeric::Matrix<mpflow_type>>(array->rows(),
-        array->cols(), cuda_stream);
+    const Eigen::Ref<distmesh::dtype::array<distmesh_type>> array, cudaStream_t cuda_stream) {
+    auto matrix = std::make_shared<mpFlow::numeric::Matrix<mpflow_type>>(array.rows(),
+        array.cols(), cuda_stream);
     for (mpFlow::dtype::index row = 0; row < matrix->rows(); ++row)
     for (mpFlow::dtype::index column = 0; column < matrix->columns(); ++column) {
-        (*matrix)(row, column) = (*array)(row, column);
+        (*matrix)(row, column) = array(row, column);
     }
     matrix->copyToDevice(cuda_stream);
 
@@ -120,24 +120,21 @@ std::tuple<
     bounding_box << -1.1 * radius, 1.1 * radius, -1.1 * radius, 1.1 * radius;
 
     // create mesh using libdistmesh
-    std::shared_ptr<distmesh::dtype::array<distmesh::dtype::real>> nodes = nullptr;
-    std::shared_ptr<distmesh::dtype::array<distmesh::dtype::index>> elements = nullptr;
-    std::tie(nodes, elements) = distmesh::distmesh(
-        distmesh::distance_functions::circular(radius),
-        [=](distmesh::dtype::array<distmesh::dtype::real>& points) {
+    auto mesh = distmesh::distmesh(
+        distmesh::distance_function::circular(radius),
+        DISTMESH_DISTANCE_FUNCTION({
             return (1.0 - (1.0 - config["outer_edge_length"].toDouble() / config["inner_edge_length"].toDouble()) *
                     points.square().rowwise().sum().sqrt() / radius).eval();
-        }, config["outer_edge_length"].toDouble(), bounding_box);
+        }), config["outer_edge_length"].toDouble(), bounding_box);
 
     // get boundary
-    std::shared_ptr<distmesh::dtype::array<distmesh::dtype::index>> boundary = nullptr;
-    boundary = distmesh::boundedges(elements);
+    auto boundary = distmesh::boundedges(std::get<1>(mesh));
 
     // convert to mpflow matrix
     auto nodes_gpu = matrixFromDistmeshArray<mpFlow::dtype::real, distmesh::dtype::real>(
-        nodes, stream);
+        std::get<0>(mesh), stream);
     auto elements_gpu = matrixFromDistmeshArray<mpFlow::dtype::index, distmesh::dtype::index>(
-        elements, stream);
+        std::get<1>(mesh), stream);
     auto boundary_gpu = matrixFromDistmeshArray<mpFlow::dtype::index, distmesh::dtype::index>(
         boundary, stream);
 
