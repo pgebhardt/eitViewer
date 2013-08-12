@@ -168,6 +168,7 @@ void MainWindow::on_actionOpen_triggered() {
         str = file.readAll();
         auto json_document = QJsonDocument::fromJson(str.toUtf8());
         auto config = json_document.object();
+        file.close();
 
         // create same mesh for both solver and calibrator
         auto mesh = Solver::createMeshFromConfig(
@@ -185,8 +186,6 @@ void MainWindow::on_actionOpen_triggered() {
             connect(this->solver(), &Calibrator::initialized, this,
                 &MainWindow::calibrator_initialized);
         }
-
-        file.close();
     }
 }
 
