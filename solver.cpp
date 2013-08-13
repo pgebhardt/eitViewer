@@ -122,9 +122,9 @@ std::tuple<
     // create mesh using libdistmesh
     auto mesh = distmesh::distmesh(
         distmesh::distance_function::circular(radius),
-        DISTMESH_DISTANCE_FUNCTION({
-            return (1.0 - (1.0 - config["outer_edge_length"].toDouble() / config["inner_edge_length"].toDouble()) *
-                    points.square().rowwise().sum().sqrt() / radius).eval();
+        DISTMESH_FUNCTIONAL({
+            return 1.0 - (1.0 - config["outer_edge_length"].toDouble() / config["inner_edge_length"].toDouble()) *
+                    points.square().rowwise().sum().sqrt() / radius;
         }), config["outer_edge_length"].toDouble(), bounding_box);
 
     // get boundary
