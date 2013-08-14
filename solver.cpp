@@ -120,12 +120,10 @@ std::tuple<
     bounding_box << -1.1 * radius, 1.1 * radius, -1.1 * radius, 1.1 * radius;
 
     // create mesh using libdistmesh
-    auto mesh = distmesh::distmesh(
-        distmesh::distance_function::circular(radius),
-        DISTMESH_FUNCTIONAL({
-            return 1.0 - (1.0 - config["outer_edge_length"].toDouble() / config["inner_edge_length"].toDouble()) *
-                    points.square().rowwise().sum().sqrt() / radius;
-        }), config["outer_edge_length"].toDouble(), bounding_box);
+    auto distance_function = distmesh::distance_function::circular(radius);
+    auto mesh = distmesh::distmesh(distance_function,
+        1.0 - (1.0 + config["outer_edge_length"].toDouble() / config["inner_edge_length"].toDouble()) * distance_function / radius,
+        config["outer_edge_length"].toDouble(), bounding_box);
 
     // get boundary
     auto boundary = distmesh::boundedges(std::get<1>(mesh));
