@@ -16,23 +16,6 @@ std::shared_ptr<mpFlow::numeric::Matrix<type>> matrixFromJsonArray(const QJsonAr
     return matrix;
 }
 
-template <
-    class mpflow_type,
-    class distmesh_type
->
-std::shared_ptr<mpFlow::numeric::Matrix<mpflow_type>> matrixFromDistmeshArray(
-    const Eigen::Ref<distmesh::dtype::array<distmesh_type>> array, cudaStream_t cuda_stream) {
-    auto matrix = std::make_shared<mpFlow::numeric::Matrix<mpflow_type>>(array.rows(),
-        array.cols(), cuda_stream);
-    for (mpFlow::dtype::index row = 0; row < matrix->rows(); ++row)
-    for (mpFlow::dtype::index column = 0; column < matrix->columns(); ++column) {
-        (*matrix)(row, column) = array(row, column);
-    }
-    matrix->copyToDevice(cuda_stream);
-
-    return matrix;
-}
-
 std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::FastConjugate>>
     createSolverFromConfig(const QJsonObject &config,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> nodes,
@@ -121,19 +104,19 @@ std::tuple<
 
     // create mesh using libdistmesh
     auto distance_function = distmesh::distance_function::circular(radius);
-    auto mesh = distmesh::distmesh(distance_function,
+    auto mesh = distmesh::distmesh(distance_function, config["outer_edge_length"].toDouble(),
         1.0 + (1.0 - config["inner_edge_length"].toDouble() / config["outer_edge_length"].toDouble()) * distance_function / radius,
-        config["outer_edge_length"].toDouble(), bounding_box);
+        bounding_box);
 
     // get boundary
     auto boundary = distmesh::boundedges(std::get<1>(mesh));
 
     // convert to mpflow matrix
-    auto nodes_gpu = matrixFromDistmeshArray<mpFlow::dtype::real, distmesh::dtype::real>(
+    auto nodes_gpu = mpFlow::numeric::matrix::fromEigen<mpFlow::dtype::real, distmesh::dtype::real>(
         std::get<0>(mesh), stream);
-    auto elements_gpu = matrixFromDistmeshArray<mpFlow::dtype::index, distmesh::dtype::index>(
+    auto elements_gpu = mpFlow::numeric::matrix::fromEigen<mpFlow::dtype::index, distmesh::dtype::index>(
         std::get<1>(mesh), stream);
-    auto boundary_gpu = matrixFromDistmeshArray<mpFlow::dtype::index, distmesh::dtype::index>(
+    auto boundary_gpu = mpFlow::numeric::matrix::fromEigen<mpFlow::dtype::index, distmesh::dtype::index>(
         boundary, stream);
 
     return std::make_tuple(nodes_gpu, elements_gpu, boundary_gpu);
