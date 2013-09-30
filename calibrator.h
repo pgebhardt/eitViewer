@@ -3,6 +3,7 @@
 
 #include "solver.h"
 #include "firfilter.h"
+#include <QTimer>
 
 class Calibrator : public Solver {
     Q_OBJECT
@@ -14,21 +15,30 @@ public:
         int cuda_device=0, QObject* parent=nullptr);
     virtual ~Calibrator();
 
+    void restart(int step_size);
+
 protected slots:
     void init_filter(int order, int step_size);
     virtual void solve();
 
 public:
     // accessor
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> image() {
+        return this->eit_solver()->gamma();
+    }
     Solver* differential_solver() { return this->differential_solver_; }
     FIRFilter* filter() { return this->filter_; }
+    QTimer* timer() { return this->timer_; }
     bool& running() { return this->running_; }
+    int& step_size() { return this->step_size_; }
 
 private:
     // member
     Solver* differential_solver_;
     FIRFilter* filter_;
+    QTimer* timer_;
     bool running_;
+    int step_size_;
 };
 
 #endif // CALIBRATOR_H

@@ -16,12 +16,12 @@ std::shared_ptr<mpFlow::numeric::Matrix<type>> matrixFromJsonArray(const QJsonAr
     return matrix;
 }
 
-std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::FastConjugate>>
-    createSolverFromConfig(const QJsonObject &config,
+std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::Conjugate>>
+    Solver::createSolverFromConfig(const QJsonObject &config,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> nodes,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
-    cublasHandle_t handle, cudaStream_t stream) {
+    int parallel_images, cublasHandle_t handle, cudaStream_t stream) {
     // load pattern from config
     auto drive_pattern = matrixFromJsonArray<mpFlow::dtype::real>(
         config["model"].toObject()["source"].toObject()["drive_pattern"].toArray(), stream);
@@ -87,8 +87,8 @@ std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::FastConjugate>>
     }
 
     // create and init solver
-    return std::make_shared<mpFlow::EIT::solver::Solver<mpFlow::numeric::FastConjugate>>(
-        model, 1, config["solver"].toObject()["regularization_factor"].toDouble(),
+    return std::make_shared<mpFlow::EIT::solver::Solver<mpFlow::numeric::Conjugate>>(
+        model, parallel_images, config["solver"].toObject()["regularization_factor"].toDouble(),
         handle, stream);
 }
 
@@ -126,9 +126,8 @@ Solver::Solver(const QJsonObject& config,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> nodes,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
-    int cuda_device, QObject *parent) :
-    QObject(parent), cuda_stream_(nullptr), cublas_handle_(nullptr), cuda_device_(cuda_device),
-    step_size_(20) {
+    int parallel_images, int cuda_device, QObject *parent) :
+    QObject(parent), cuda_stream_(nullptr), cublas_handle_(nullptr), cuda_device_(cuda_device) {
     // init separate thread
     this->thread_ = new QThread(this);
     this->moveToThread(this->thread());
@@ -143,15 +142,9 @@ Solver::Solver(const QJsonObject& config,
         bool success = true;
         try {
             // create and init solver
-            this->eit_solver_ = createSolverFromConfig(config, nodes, elements,
-                boundary, this->cublas_handle(), this->cuda_stream());
+            this->eit_solver_ = Solver::createSolverFromConfig(config, nodes, elements,
+                boundary, parallel_images, this->cublas_handle(), this->cuda_stream());
             this->eit_solver()->preSolve(this->cublas_handle(), this->cuda_stream());
-            this->measurement()->copyToHost(this->cuda_stream());
-
-            // start solve timer
-            this->solve_timer_ = new QTimer(this);
-            connect(this->solve_timer(), &QTimer::timeout, this, &Solver::solve);
-            this->restart(20);
 
         } catch (const std::exception& e) {
             success = false;
@@ -165,16 +158,13 @@ Solver::Solver(const QJsonObject& config,
     this->thread()->start();
 }
 
-void Solver::restart(int step_size) {
-    this->step_size_ = step_size;
-    this->solve_timer()->start(this->step_size());
-}
-
 void Solver::solve() {
+    cudaStreamSynchronize(this->cuda_stream());
     this->time().restart();
 
     this->eit_solver()->solve_differential(this->cublas_handle(),
         this->cuda_stream())->copyToHost(this->cuda_stream());
 
+    cudaStreamSynchronize(this->cuda_stream());
     this->solve_time() = this->time().elapsed();
 }

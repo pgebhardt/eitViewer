@@ -15,7 +15,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::MainWindow), measurement_system_(nullptr),
-    solver_(nullptr), calibrator_(nullptr) {
+    solver_(nullptr), calibrator_(nullptr), counter(0) {
     ui->setupUi(this);
     this->statusBar()->hide();
 
@@ -32,8 +32,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(this->draw_timer_, &QTimer::timeout, this, &MainWindow::draw);
 
     // create measurement system
-    this->measurement_system_ = new MeasurementSystem(
-        std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(1, 1, nullptr));
+    this->measurement_system_ = new MeasurementSystem();
 
     // TODO
     // init table widget
@@ -130,18 +129,25 @@ void MainWindow::addAnalysis(QString name, QString unit,
 void MainWindow::draw() {
     if (this->solver()) {
         // solve
-        auto gamma = this->solver()->dgamma();
+        auto image = this->solver()->image();
         if (this->ui->actionCalibrator_Data->isChecked()) {
-            gamma = this->calibrator()->gamma();
+            image = this->calibrator()->image();
         }
 
         // update image
-        this->ui->image->draw(gamma);
+        this->ui->image->draw(image);
 
         // evaluate analysis functions
         for (const auto& analysis : this->analysis()) {
             this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
-                QString("%1 ").arg(std::get<2>(analysis)(gamma)) + std::get<1>(analysis));
+                QString("%1 ").arg(std::get<2>(analysis)(image)) + std::get<1>(analysis));
+        }
+
+        // save current gamma
+        if (this->calibrator()->running()) {
+            mpFlow::numeric::matrix::savetxt(tr("out/data%1.txt").arg(this->counter).toStdString(),
+                image);
+            this->counter++;
         }
     }
 }
@@ -176,7 +182,7 @@ void MainWindow::on_actionOpen_triggered() {
 
         // create new Solver from config
         this->solver_ = new Solver(config, std::get<0>(mesh), std::get<1>(mesh),
-            std::get<2>(mesh), 0);
+            std::get<2>(mesh), 128, 0);
         connect(this->solver(), &Solver::initialized, this, &MainWindow::solver_initialized);
 
         // create auto calibrator
@@ -205,7 +211,8 @@ void MainWindow::on_actionLoad_Measurement_triggered() {
             // load matrix
             try {
                 auto voltage = mpFlow::numeric::matrix::loadtxt<mpFlow::dtype::real>(file_name.toStdString(), nullptr);
-                this->solver()->measurement()->copy(voltage, nullptr);
+                this->measurement_system()->measurement_buffer()[0]->copy(voltage, nullptr);
+                emit this->measurement_system()->data_ready();
             } catch(const std::exception&) {
                 QMessageBox::information(this, this->windowTitle(), "Cannot load measurement matrix!");
             }
@@ -221,9 +228,10 @@ void MainWindow::on_actionSave_Measurement_triggered() {
 
         // save measurement to file
         if (file_name != "") {
-            this->solver()->measurement()->copyToHost(nullptr);
+            this->measurement_system()->measurement_buffer()[0]->copyToHost(nullptr);
             cudaStreamSynchronize(nullptr);
-            mpFlow::numeric::matrix::savetxt(file_name.toStdString(), this->solver()->measurement());
+            mpFlow::numeric::matrix::savetxt(file_name.toStdString(),
+                this->measurement_system()->measurement_buffer()[0]);
         }
     }
 }
@@ -231,7 +239,9 @@ void MainWindow::on_actionSave_Measurement_triggered() {
 void MainWindow::on_actionCalibrate_triggered() {
     if (this->solver()) {
         // set calibration voltage to current measurment voltage
-        this->solver()->calculation()->copy(this->solver()->measurement(), nullptr);
+        this->solver()->eit_solver()->calculation()[0]->copy(
+            this->measurement_system()->measurement_buffer()[0], nullptr);
+        emit this->measurement_system()->data_ready();
     }
 }
 
@@ -282,11 +292,12 @@ void MainWindow::solver_initialized(bool success) {
 
         // set correct matrix for measurement system with meta object method call
         // to ensure matrix update not during data read or write
-        qRegisterMetaType<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>(
-            "std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>");
-        QMetaObject::invokeMethod(this->measurement_system(), "setMeasurementMatrix",
-            Qt::AutoConnection, Q_ARG(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>,
-                this->solver()->measurement()));
+        qRegisterMetaType<std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>*>(
+            "std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>*");
+        QMetaObject::invokeMethod(this->measurement_system(), "setMeasurementBuffer",
+            Qt::AutoConnection, Q_ARG(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>*,
+                &this->solver()->eit_solver()->measurement()));
+        connect(this->measurement_system(), &MeasurementSystem::data_ready, this->solver(), &Solver::solve);
     } else {
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot load solver from config!"));

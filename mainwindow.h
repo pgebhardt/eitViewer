@@ -62,6 +62,7 @@ private:
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>
         analysis_;
+    int counter;
 };
 
 #endif // MAINWINDOW_H
