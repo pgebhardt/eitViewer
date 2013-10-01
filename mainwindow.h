@@ -35,6 +35,7 @@ private slots:
     void on_actionVersion_triggered();
     void solver_initialized(bool success);
     void calibrator_initialized(bool success);
+    void update_image_increment(int time_elapsed);
 
 protected:
     void initTable();
@@ -52,6 +53,8 @@ public:
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>&
         analysis() { return this->analysis_; }
+    double& image_pos() { return this->image_pos_; }
+    double& image_increment() { return this->image_increment_; }
 
 private:
     Ui::MainWindow *ui;
@@ -62,7 +65,8 @@ private:
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>
         analysis_;
-    int counter;
+    double image_pos_;
+    double image_increment_;
 };
 
 #endif // MAINWINDOW_H

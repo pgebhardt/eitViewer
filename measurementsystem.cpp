@@ -20,6 +20,7 @@ void MeasurementSystem::init() {
     this->measurement_system_socket_ = new QUdpSocket(this);
     this->measurement_system_socket().bind(3002, QUdpSocket::ShareAddress);
     connect(&this->measurement_system_socket(), SIGNAL(readyRead()), this, SLOT(readyRead()));
+    this->time().restart();
 }
 
 void MeasurementSystem::readyRead() {
@@ -52,7 +53,9 @@ void MeasurementSystem::readyRead() {
         // emit data_ready signal when buffer is full
         if (this->buffer_pos() >= this->measurement_buffer().size()) {
             this->buffer_pos() = 0;
-            emit this->data_ready();
+
+            emit this->data_ready(this->time().elapsed());
+            this->time().restart();
         }
     }
 

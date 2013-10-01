@@ -15,7 +15,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::MainWindow), measurement_system_(nullptr),
-    solver_(nullptr), calibrator_(nullptr), counter(0) {
+    solver_(nullptr), calibrator_(nullptr), image_pos_(0.0), image_increment_(0.0) {
     ui->setupUi(this);
     this->statusBar()->hide();
 
@@ -33,6 +33,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create measurement system
     this->measurement_system_ = new MeasurementSystem();
+    connect(this->measurement_system(), &MeasurementSystem::data_ready, this,
+        &MainWindow::update_image_increment);
 
     // TODO
     // init table widget
@@ -137,20 +139,18 @@ void MainWindow::draw() {
             this->ui->image->draw(image);
         } else {
             // update image
-            this->ui->image->draw(image, this->measurement_system()->buffer_pos());
+            this->ui->image->draw(image, (int)this->image_pos());
+            this->image_pos() += this->image_increment();
+            if (this->image_pos() >= (double)image->columns()) {
+                this->image_pos() = 0.0;
+                this->image_increment() = 0.0;
+            }
         }
 
         // evaluate analysis functions
         for (const auto& analysis : this->analysis()) {
             this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
                 QString("%1 ").arg(std::get<2>(analysis)(image)) + std::get<1>(analysis));
-        }
-
-        // save current gamma
-        if (this->calibrator()->running()) {
-            mpFlow::numeric::matrix::savetxt(tr("out/data%1.txt").arg(this->counter).toStdString(),
-                image);
-            this->counter++;
         }
     }
 }
@@ -185,7 +185,7 @@ void MainWindow::on_actionOpen_triggered() {
 
         // create new Solver from config
         this->solver_ = new Solver(config, std::get<0>(mesh), std::get<1>(mesh),
-            std::get<2>(mesh), 1, 0);
+            std::get<2>(mesh), 128, 0);
         connect(this->solver(), &Solver::initialized, this, &MainWindow::solver_initialized);
 
         // create auto calibrator
@@ -324,4 +324,10 @@ void MainWindow::calibrator_initialized(bool success) {
     } else {
         connect(this->calibrator()->timer(), &QTimer::timeout, this->solver(), &Solver::solve);
     }
+}
+
+void MainWindow::update_image_increment(int time_elapsed) {
+    this->image_pos() = 0.0;
+    this->image_increment() = time_elapsed > 20 ? 20.0 / (double)time_elapsed * 128.0 : 0.0;
+    std::cout << this->image_increment() << std::endl;
 }

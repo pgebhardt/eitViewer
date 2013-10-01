@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QThread>
 #include <QUdpSocket>
+#include <QTime>
 #include <mpflow/mpflow.h>
 
 class MeasurementSystem : public QObject {
@@ -12,7 +13,7 @@ public:
     explicit MeasurementSystem(QObject* parent=nullptr);
 
 signals:
-    void data_ready();
+    void data_ready(int time_elapsed=0);
 
 public slots:
     void init();
@@ -28,6 +29,7 @@ public:
         return *this->measurement_buffer_;
     }
     QThread* thread() { return this->thread_; }
+    QTime& time() { return this->time_; }
     size_t& buffer_pos() { return this->buffer_pos_; }
 
 // member
@@ -35,6 +37,7 @@ private:
     QUdpSocket* measurement_system_socket_;
     std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>* measurement_buffer_;
     QThread* thread_;
+    QTime time_;
     size_t buffer_pos_;
 };
 
