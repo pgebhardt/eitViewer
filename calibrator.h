@@ -15,11 +15,11 @@ public:
         int cuda_device=0, QObject* parent=nullptr);
     virtual ~Calibrator();
 
-    void restart(int step_size);
-
-protected slots:
+public slots:
     void init_filter(int order, int step_size);
     virtual void solve();
+    void start(int step_size);
+    void stop();
 
 public:
     // accessor
@@ -29,7 +29,7 @@ public:
     Solver* differential_solver() { return this->differential_solver_; }
     FIRFilter* filter() { return this->filter_; }
     QTimer* timer() { return this->timer_; }
-    bool& running() { return this->running_; }
+    bool running() { return this->timer()->isActive(); }
     int& step_size() { return this->step_size_; }
 
 private:
@@ -37,7 +37,6 @@ private:
     Solver* differential_solver_;
     FIRFilter* filter_;
     QTimer* timer_;
-    bool running_;
     int step_size_;
 };
 

@@ -18,7 +18,7 @@ CalibratorDialog::CalibratorDialog(Calibrator* calibrator, QWidget *parent)
     connect(this, &QDialog::accepted, [=]() {
         calibrator->eit_solver()->inverse_solver()->regularization_factor() =
             this->ui->regularization_factor_box->text().toDouble();
-        calibrator->restart(this->ui->step_size_box->text().toInt());
+        calibrator->start(this->ui->step_size_box->text().toInt());
         calibrator->filter()->restart(this->ui->filter_step_size_box->text().toInt());
     });
 }

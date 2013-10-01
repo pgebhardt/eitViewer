@@ -14,7 +14,8 @@ public:
 
     void init(std::shared_ptr<mpFlow::EIT::model::Base> model);
     void cleanup();
-    void draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values);
+    void draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values,
+        int pos=0);
 
 protected:
     virtual void initializeGL();

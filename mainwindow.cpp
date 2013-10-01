@@ -132,10 +132,13 @@ void MainWindow::draw() {
         auto image = this->solver()->image();
         if (this->ui->actionCalibrator_Data->isChecked()) {
             image = this->calibrator()->image();
-        }
 
-        // update image
-        this->ui->image->draw(image);
+            // update image
+            this->ui->image->draw(image);
+        } else {
+            // update image
+            this->ui->image->draw(image, this->measurement_system()->buffer_pos());
+        }
 
         // evaluate analysis functions
         for (const auto& analysis : this->analysis()) {
@@ -182,14 +185,14 @@ void MainWindow::on_actionOpen_triggered() {
 
         // create new Solver from config
         this->solver_ = new Solver(config, std::get<0>(mesh), std::get<1>(mesh),
-            std::get<2>(mesh), 128, 0);
+            std::get<2>(mesh), 1, 0);
         connect(this->solver(), &Solver::initialized, this, &MainWindow::solver_initialized);
 
         // create auto calibrator
         if (this->hasMultiGPU()) {
             this->calibrator_ = new Calibrator(this->solver(), config,
                 std::get<0>(mesh), std::get<1>(mesh), std::get<2>(mesh), 1);
-            connect(this->solver(), &Calibrator::initialized, this,
+            connect(this->calibrator(), &Calibrator::initialized, this,
                 &MainWindow::calibrator_initialized);
         }
     }
@@ -212,6 +215,7 @@ void MainWindow::on_actionLoad_Measurement_triggered() {
             try {
                 auto voltage = mpFlow::numeric::matrix::loadtxt<mpFlow::dtype::real>(file_name.toStdString(), nullptr);
                 this->measurement_system()->measurement_buffer()[0]->copy(voltage, nullptr);
+                this->measurement_system()->buffer_pos() = 0;
                 emit this->measurement_system()->data_ready();
             } catch(const std::exception&) {
                 QMessageBox::information(this, this->windowTitle(), "Cannot load measurement matrix!");
@@ -239,15 +243,24 @@ void MainWindow::on_actionSave_Measurement_triggered() {
 void MainWindow::on_actionCalibrate_triggered() {
     if (this->solver()) {
         // set calibration voltage to current measurment voltage
-        this->solver()->eit_solver()->calculation()[0]->copy(
-            this->measurement_system()->measurement_buffer()[0], nullptr);
+        for (mpFlow::dtype::index i = 0; i < this->solver()->eit_solver()->calculation().size(); ++i) {
+            this->solver()->eit_solver()->calculation()[i]->copy(
+                this->measurement_system()->measurement_buffer()[i], nullptr);
+        }
+
+        this->measurement_system()->buffer_pos() = 0;
         emit this->measurement_system()->data_ready();
     }
 }
 
 void MainWindow::on_actionAuto_Calibrate_toggled(bool arg1) {
     if (this->calibrator()) {
-        this->calibrator()->running() = arg1;
+        if (arg1) {
+            QMetaObject::invokeMethod(this->calibrator(), "start",
+                Qt::AutoConnection, Q_ARG(int, this->calibrator()->step_size()));
+        } else {
+            QMetaObject::invokeMethod(this->calibrator(), "stop");
+        }
     }
 }
 
@@ -308,5 +321,7 @@ void MainWindow::calibrator_initialized(bool success) {
     if (!success) {
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot create calibrator!"));
+    } else {
+        connect(this->calibrator()->timer(), &QTimer::timeout, this->solver(), &Solver::solve);
     }
 }

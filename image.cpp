@@ -3,15 +3,15 @@
 #include "image.h"
 
 void jet(const std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values, mpFlow::dtype::real norm,
-         std::vector<mpFlow::dtype::real>* red, std::vector<mpFlow::dtype::real>* green,
-         std::vector<mpFlow::dtype::real>* blue) {
+    std::vector<mpFlow::dtype::real>* red, std::vector<mpFlow::dtype::real>* green,
+    std::vector<mpFlow::dtype::real>* blue, int pos) {
     // calc colors
     for (mpFlow::dtype::index element = 0; element < values->rows(); ++element) {
-        (*red)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, 0) / norm - 0.5) + 1.5,
+        (*red)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm - 0.5) + 1.5,
                                             0.0), 1.0);
-        (*green)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, 0) / norm - 0.0) + 1.5,
+        (*green)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm - 0.0) + 1.5,
                                             0.0), 1.0);
-        (*blue)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, 0) / norm + 0.5) + 1.5,
+        (*blue)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm + 0.5) + 1.5,
                                              0.0), 1.0);
     }
 }
@@ -93,7 +93,8 @@ void Image::cleanup() {
     }
 }
 
-void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) {
+void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values,
+    int pos) {
     // check for beeing initialized
     if ((!this->vertices_) || (!this->colors_) || (!this->model())) {
         return;
@@ -105,8 +106,8 @@ void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> v
 
     // calc min and max
     for (mpFlow::dtype::index element = 0; element < values->rows(); ++element) {
-        min_value = std::min((*values)(element, 0), min_value);
-        max_value = std::max((*values)(element, 0), max_value);
+        min_value = std::min((*values)(element, pos), min_value);
+        max_value = std::max((*values)(element, pos), max_value);
     }
 
     // calc norm
@@ -116,7 +117,7 @@ void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> v
     norm = norm == 0.0 ? 1.0 : norm;
 
     // calc colors
-    jet(values, norm, &this->red(), &this->green(), &this->blue());
+    jet(values, norm, &this->red(), &this->green(), &this->blue(), pos);
 
     // set colors
     for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
@@ -144,7 +145,7 @@ void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> v
     for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
         for (mpFlow::dtype::index node = 0; node < 3; ++node) {
             z_values[(*this->model()->mesh()->elements())(element, node)] +=
-                (*values)(element, 0) * this->element_area()[element];
+                (*values)(element, pos) * this->element_area()[element];
         }
     }
 
