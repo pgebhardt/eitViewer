@@ -159,12 +159,15 @@ Solver::Solver(const QJsonObject& config,
 }
 
 void Solver::solve() {
-    cudaStreamSynchronize(this->cuda_stream());
     this->time().restart();
+    cudaStreamSynchronize(this->cuda_stream());
 
     this->eit_solver()->solve_differential(this->cublas_handle(),
         this->cuda_stream())->copyToHost(this->cuda_stream());
 
     cudaStreamSynchronize(this->cuda_stream());
     this->solve_time() = this->time().elapsed();
+
+    emit this->data_ready(this->repeat_time().elapsed());
+    this->repeat_time().restart();
 }

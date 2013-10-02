@@ -44,16 +44,21 @@ void MeasurementSystem::readyRead() {
 
     // move to next buffer element and upload current buffer element to gpu
     if ((mpFlow::dtype::index)excitation == this->measurement_buffer()[this->buffer_pos()]->columns() - 1) {
-        // upload current buffer element to gpu
-        this->measurement_buffer()[this->buffer_pos()]->copyToDevice(nullptr);
-
         // move to next buffer element
         this->buffer_pos() += 1;
 
         // emit data_ready signal when buffer is full
         if (this->buffer_pos() >= this->measurement_buffer().size()) {
+            // upload measurement buffer to gpu
+            for (mpFlow::dtype::index i = 0; i < this->measurement_buffer().size(); ++i) {
+                this->measurement_buffer()[i]->copyToDevice(nullptr);
+            }
+            cudaStreamSynchronize(nullptr);
+
+            // reset buffer pos
             this->buffer_pos() = 0;
 
+            // emit signal for new data package ready
             emit this->data_ready(this->time().elapsed());
             this->time().restart();
         }

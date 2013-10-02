@@ -32,6 +32,7 @@ public:
 
 signals:
     void initialized(bool success);
+    void data_ready(int time_elapsed);
 
 public slots:
     void solve();
@@ -47,6 +48,7 @@ public:
     }
     QThread* thread() { return this->thread_; }
     QTime& time() { return this->time_; }
+    QTime& repeat_time() { return this->repeat_time_; }
     const cudaStream_t& cuda_stream() { return this->cuda_stream_; }
     const cublasHandle_t& cublas_handle() { return this->cublas_handle_; }
     int cuda_device() { return this->cuda_device_; }
@@ -58,6 +60,7 @@ private:
         mpFlow::numeric::Conjugate>> eit_solver_;
     QThread* thread_;
     QTime time_;
+    QTime repeat_time_;
     int solve_time_;
     cudaStream_t cuda_stream_;
     cublasHandle_t cublas_handle_;

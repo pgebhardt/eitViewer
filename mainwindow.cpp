@@ -1,3 +1,4 @@
+#include <fstream>
 #include <mpflow/mpflow.h>
 #include <QtCore>
 #include <QtGui>
@@ -33,8 +34,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create measurement system
     this->measurement_system_ = new MeasurementSystem();
-    connect(this->measurement_system(), &MeasurementSystem::data_ready, this,
-        &MainWindow::update_image_increment);
 
     // TODO
     // init table widget
@@ -49,7 +48,8 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 
 MainWindow::~MainWindow() {
-    delete this->ui;
+    // cleanup solver
+    this->cleanupSolver();
 
     // cleanup measurement system
     if (this->measurement_system()) {
@@ -58,8 +58,7 @@ MainWindow::~MainWindow() {
         delete this->measurement_system();
     }
 
-    // cleanup solver
-    this->cleanupSolver();
+    delete this->ui;
 }
 
 void MainWindow::initTable() {
@@ -74,17 +73,17 @@ void MainWindow::initTable() {
     this->addAnalysis("normalization threashold:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
         return this->ui->image->threashold();
     });
-    this->addAnalysis("min:", "dB", [](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
+    this->addAnalysis("min:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
         mpFlow::dtype::real result = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
-            result = std::min((*values)(i, 0), result);
+            result = std::min((*values)(i, this->image_pos()), result);
         }
         return result;
     });
-    this->addAnalysis("max:", "dB", [](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
+    this->addAnalysis("max:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
         mpFlow::dtype::real result = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
-            result = std::max((*values)(i, 0), result);
+            result = std::max((*values)(i, this->image_pos()), result);
         }
         return result;
     });
@@ -92,7 +91,7 @@ void MainWindow::initTable() {
         mpFlow::dtype::real rms = 0.0;
         mpFlow::dtype::real area = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
-            rms += mpFlow::math::square((*values)(i, 0)) * this->ui->image->element_area()[i];
+            rms += mpFlow::math::square((*values)(i, this->image_pos())) * this->ui->image->element_area()[i];
             area += this->ui->image->element_area()[i];
         }
         return std::sqrt(rms / area);
@@ -107,6 +106,7 @@ void MainWindow::cleanupSolver() {
         this->calibrator_ = nullptr;
     }
     if (this->solver()) {
+        disconnect(this->measurement_system(), &MeasurementSystem::data_ready, this->solver(), &Solver::solve);
         this->solver()->thread()->quit();
         this->solver()->thread()->wait();
         delete this->solver();
@@ -132,25 +132,32 @@ void MainWindow::draw() {
     if (this->solver()) {
         // solve
         auto image = this->solver()->image();
-        if (this->ui->actionCalibrator_Data->isChecked()) {
+/*        if (this->ui->actionCalibrator_Data->isChecked()) {
             image = this->calibrator()->image();
 
             // update image
             this->ui->image->draw(image);
-        } else {
+        } else {*/
             // update image
             this->ui->image->draw(image, (int)this->image_pos());
             this->image_pos() += this->image_increment();
             if (this->image_pos() >= (double)image->columns()) {
-                this->image_pos() = 0.0;
+                this->image_pos() = (double)image->columns() - 1.0;
                 this->image_increment() = 0.0;
             }
-        }
+//        }
 
         // evaluate analysis functions
         for (const auto& analysis : this->analysis()) {
             this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
                 QString("%1 ").arg(std::get<2>(analysis)(image)) + std::get<1>(analysis));
+        }
+
+        if (this->calibrator()->running()) {
+            std::ofstream file;
+            file.open("out/rms.txt", std::ofstream::out | std::ofstream::app);
+            file << std::get<2>(this->analysis()[5])(image) << std::endl;
+            file.close();
         }
     }
 }
@@ -185,7 +192,7 @@ void MainWindow::on_actionOpen_triggered() {
 
         // create new Solver from config
         this->solver_ = new Solver(config, std::get<0>(mesh), std::get<1>(mesh),
-            std::get<2>(mesh), 128, 0);
+            std::get<2>(mesh), 16, 0);
         connect(this->solver(), &Solver::initialized, this, &MainWindow::solver_initialized);
 
         // create auto calibrator
@@ -311,6 +318,7 @@ void MainWindow::solver_initialized(bool success) {
             Qt::AutoConnection, Q_ARG(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>*,
                 &this->solver()->eit_solver()->measurement()));
         connect(this->measurement_system(), &MeasurementSystem::data_ready, this->solver(), &Solver::solve);
+        connect(this->solver(), &Solver::data_ready, this, &MainWindow::update_image_increment);
     } else {
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot load solver from config!"));
@@ -322,12 +330,12 @@ void MainWindow::calibrator_initialized(bool success) {
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot create calibrator!"));
     } else {
-        connect(this->calibrator()->timer(), &QTimer::timeout, this->solver(), &Solver::solve);
+        // connect(this->calibrator()->timer(), &QTimer::timeout, this->solver(), &Solver::solve);
     }
 }
 
 void MainWindow::update_image_increment(int time_elapsed) {
     this->image_pos() = 0.0;
-    this->image_increment() = time_elapsed > 20 ? 20.0 / (double)time_elapsed * 128.0 : 0.0;
-    std::cout << this->image_increment() << std::endl;
+    this->image_increment() = time_elapsed > 20 ? 20.0 / (double)time_elapsed *
+        (double)this->solver()->eit_solver()->measurement().size() : 0.0;
 }

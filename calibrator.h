@@ -17,7 +17,7 @@ public:
 
 public slots:
     void init_filter(int order, int step_size);
-    virtual void solve();
+    void solve();
     void start(int step_size);
     void stop();
 
