@@ -158,9 +158,14 @@ Solver::Solver(const QJsonObject& config,
     this->thread()->start();
 }
 
-void Solver::solve() {
-    this->time().restart();
+void Solver::solve(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>* data) {
+    // copy data to solver
+    for (mpFlow::dtype::index i = 0; i < data->size(); ++i) {
+        this->eit_solver()->measurement()[i]->copy((*data)[i], this->cuda_stream());
+    }
     cudaStreamSynchronize(this->cuda_stream());
+
+    this->time().restart();
 
     this->eit_solver()->solve_differential(this->cublas_handle(),
         this->cuda_stream())->copyToHost(this->cuda_stream());

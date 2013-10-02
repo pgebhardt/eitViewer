@@ -223,7 +223,8 @@ void MainWindow::on_actionLoad_Measurement_triggered() {
                 auto voltage = mpFlow::numeric::matrix::loadtxt<mpFlow::dtype::real>(file_name.toStdString(), nullptr);
                 this->measurement_system()->measurement_buffer()[0]->copy(voltage, nullptr);
                 this->measurement_system()->buffer_pos() = 0;
-                emit this->measurement_system()->data_ready();
+                emit this->measurement_system()->data_ready(&this->measurement_system()
+                    ->measurement_buffer());
             } catch(const std::exception&) {
                 QMessageBox::information(this, this->windowTitle(), "Cannot load measurement matrix!");
             }
@@ -255,8 +256,8 @@ void MainWindow::on_actionCalibrate_triggered() {
                 this->measurement_system()->measurement_buffer()[i], nullptr);
         }
 
-        this->measurement_system()->buffer_pos() = 0;
-        emit this->measurement_system()->data_ready();
+        emit this->measurement_system()->data_ready(
+            &this->measurement_system()->measurement_buffer());
     }
 }
 
@@ -312,11 +313,11 @@ void MainWindow::solver_initialized(bool success) {
 
         // set correct matrix for measurement system with meta object method call
         // to ensure matrix update not during data read or write
-        qRegisterMetaType<std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>*>(
-            "std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>*");
-        QMetaObject::invokeMethod(this->measurement_system(), "setMeasurementBuffer",
-            Qt::AutoConnection, Q_ARG(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>*,
-                &this->solver()->eit_solver()->measurement()));
+        qRegisterMetaType<mpFlow::dtype::index>("mpFlow::dtype::index");
+        QMetaObject::invokeMethod(this->measurement_system(), "init", Qt::AutoConnection,
+            Q_ARG(mpFlow::dtype::index, this->solver()->eit_solver()->measurement().size()),
+            Q_ARG(mpFlow::dtype::index, this->solver()->eit_solver()->measurement()[0]->rows()),
+            Q_ARG(mpFlow::dtype::index, this->solver()->eit_solver()->measurement()[0]->columns()));
         connect(this->measurement_system(), &MeasurementSystem::data_ready, this->solver(), &Solver::solve);
         connect(this->solver(), &Solver::data_ready, this, &MainWindow::update_image_increment);
     } else {

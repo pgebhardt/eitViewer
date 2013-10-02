@@ -2,24 +2,36 @@
 #include <QDataStream>
 
 MeasurementSystem::MeasurementSystem(QObject* parent) :
-    QObject(parent), measurement_system_socket_(nullptr), buffer_pos_(0) {
+    QObject(parent), measurement_system_socket_(nullptr), measurement_buffer_(nullptr),
+    buffer_pos_(0) {
     // create separat thread
     this->thread_ = new QThread(this);
-    connect(this->thread(), SIGNAL(started()), this, SLOT(init()));
     this->moveToThread(this->thread());
-
-    // init measurement buffer
-    this->measurement_buffer_ = new std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>(1);
-    this->measurement_buffer()[0] = std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(1, 1, nullptr);
 
     this->thread()->start();
 }
 
-void MeasurementSystem::init() {
+void MeasurementSystem::init(mpFlow::dtype::index buffer_size, mpFlow::dtype::index rows,
+    mpFlow::dtype::index columns) {
+    // init measurement buffer
+    if (this->measurement_buffer_ != nullptr) {
+        delete this->measurement_buffer_;
+        this->measurement_buffer_ = nullptr;
+    }
+    this->measurement_buffer_ = new std::vector<std::shared_ptr<mpFlow::numeric::Matrix<
+        mpFlow::dtype::real>>>(buffer_size);
+    for (mpFlow::dtype::index i = 0; i < buffer_size; ++i) {
+        this->measurement_buffer()[i] = std::make_shared<mpFlow::numeric::Matrix<
+            mpFlow::dtype::real>>(rows, columns, nullptr);
+    }
+
     // create udp socket
-    this->measurement_system_socket_ = new QUdpSocket(this);
-    this->measurement_system_socket().bind(3002, QUdpSocket::ShareAddress);
-    connect(&this->measurement_system_socket(), SIGNAL(readyRead()), this, SLOT(readyRead()));
+    if (this->measurement_system_socket_ == nullptr) {
+        this->measurement_system_socket_ = new QUdpSocket(this);
+        this->measurement_system_socket().bind(3002, QUdpSocket::ShareAddress);
+        connect(&this->measurement_system_socket(), SIGNAL(readyRead()), this, SLOT(readyRead()));
+    }
+
     this->time().restart();
 }
 
@@ -59,7 +71,7 @@ void MeasurementSystem::readyRead() {
             this->buffer_pos() = 0;
 
             // emit signal for new data package ready
-            emit this->data_ready(this->time().elapsed());
+            emit this->data_ready(&this->measurement_buffer(), this->time().elapsed());
             this->time().restart();
         }
     }

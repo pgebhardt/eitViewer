@@ -13,14 +13,13 @@ public:
     explicit MeasurementSystem(QObject* parent=nullptr);
 
 signals:
-    void data_ready(int time_elapsed=0);
+    void data_ready(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<
+        mpFlow::dtype::real>>>* data, int time_elapsed=0);
 
 public slots:
-    void init();
+    void init(mpFlow::dtype::index buffer_size, mpFlow::dtype::index rows,
+        mpFlow::dtype::index columns);
     virtual void readyRead();
-    void setMeasurementBuffer(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>* buffer) {
-        this->measurement_buffer_ = buffer;
-    }
 
 public:
     // accessors
@@ -30,7 +29,7 @@ public:
     }
     QThread* thread() { return this->thread_; }
     QTime& time() { return this->time_; }
-    size_t& buffer_pos() { return this->buffer_pos_; }
+    mpFlow::dtype::index& buffer_pos() { return this->buffer_pos_; }
 
 // member
 private:
@@ -38,7 +37,7 @@ private:
     std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>* measurement_buffer_;
     QThread* thread_;
     QTime time_;
-    size_t buffer_pos_;
+    mpFlow::dtype::index buffer_pos_;
 };
 
 #endif // MEASUREMENTSYSTEM_H

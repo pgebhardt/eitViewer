@@ -35,7 +35,7 @@ signals:
     void data_ready(int time_elapsed);
 
 public slots:
-    void solve();
+    void solve(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>* data);
 
 public:
     // accessors
