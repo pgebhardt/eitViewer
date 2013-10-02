@@ -17,20 +17,25 @@ void jet(const std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> val
 }
 
 Image::Image(QWidget* parent) :
-    QGLWidget(parent), model_(nullptr), vertices_(nullptr), colors_(nullptr),
+    QGLWidget(parent), model_(nullptr), data_(nullptr), vertices_(nullptr), colors_(nullptr),
     red_(0), green_(0), blue_(0), node_area_(0), element_area_(0), x_angle_(0.0),
-    z_angle_(0.0), threashold_(0.1) {
+    z_angle_(0.0), threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
+    // create timer
+    this->draw_timer_ = new QTimer(this);
+    connect(this->draw_timer_, &QTimer::timeout, this, &Image::update_gl_buffer);
 }
 
 Image::~Image() {
     this->cleanup();
 }
 
-void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model) {
-    this->model_ = model;
-
+void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
+    mpFlow::dtype::index rows, mpFlow::dtype::index columns) {
     // cleanup
     this->cleanup();
+
+    this->model_ = model;
+    this->data_ = std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(rows, columns, nullptr);
 
     // create vectors
     this->red_ = std::vector<mpFlow::dtype::real>(this->model()->mesh()->elements()->rows(), 1.0);
@@ -80,9 +85,15 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model) {
                 std::get<1>(std::get<1>(nodes[node])) / model->mesh()->radius();
         }
     }
+
+    // start draw timer
+    this->draw_timer().start(20);
 }
 
 void Image::cleanup() {
+    // stop timer
+    this->draw_timer().stop();
+
     if (this->vertices_) {
         delete [] this->vertices_;
         this->vertices_ = nullptr;
@@ -93,21 +104,30 @@ void Image::cleanup() {
     }
 }
 
-void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values,
-    int pos) {
-    // check for beeing initialized
-    if ((!this->vertices_) || (!this->colors_) || (!this->model())) {
-        return;
-    }
+void Image::update_data(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data,
+    int time_elapsed) {
+    this->data()->copy(data, nullptr);
+    this->data()->copyToHost(nullptr);
+    cudaStreamSynchronize(nullptr);
+
+    // update image increments
+    this->image_pos() = 0.0;
+    this->image_increment() = time_elapsed > 20 ? 20.0 / (double)time_elapsed *
+        (double)this->data()->columns() : 0.0;
+}
+
+void Image::update_gl_buffer() {
+    // get current image pos
+    mpFlow::dtype::index pos = (mpFlow::dtype::index)this->image_pos();
 
     // min and max values
     mpFlow::dtype::real min_value = 0.0;
     mpFlow::dtype::real max_value = 0.0;
 
     // calc min and max
-    for (mpFlow::dtype::index element = 0; element < values->rows(); ++element) {
-        min_value = std::min((*values)(element, pos), min_value);
-        max_value = std::max((*values)(element, pos), max_value);
+    for (mpFlow::dtype::index element = 0; element < this->data()->rows(); ++element) {
+        min_value = std::min((*this->data())(element, pos), min_value);
+        max_value = std::max((*this->data())(element, pos), max_value);
     }
 
     // calc norm
@@ -117,7 +137,7 @@ void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> v
     norm = norm == 0.0 ? 1.0 : norm;
 
     // calc colors
-    jet(values, norm, &this->red(), &this->green(), &this->blue(), pos);
+    jet(this->data(), norm, &this->red(), &this->green(), &this->blue(), pos);
 
     // set colors
     for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
@@ -145,7 +165,7 @@ void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> v
     for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
         for (mpFlow::dtype::index node = 0; node < 3; ++node) {
             z_values[(*this->model()->mesh()->elements())(element, node)] +=
-                (*values)(element, pos) * this->element_area()[element];
+                (*this->data())(element, pos) * this->element_area()[element];
         }
     }
 
@@ -156,6 +176,13 @@ void Image::draw(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> v
                 -z_values[(*this->model()->mesh()->elements())(element, node)] /
                     (this->node_area()[(*this->model()->mesh()->elements())(element, node)] * norm);
         }
+    }
+
+    // update image pos
+    this->image_pos() += this->image_increment();
+    if (this->image_pos() >= (double)this->data()->columns()) {
+        this->image_pos() = (double)this->data()->columns() - 1.0;
+        this->image_increment() = 0.0;
     }
 
     // redraw

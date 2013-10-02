@@ -32,16 +32,14 @@ public:
 
 signals:
     void initialized(bool success);
-    void data_ready(int time_elapsed);
+    void data_ready(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> image,
+        int time_elapsed);
 
 public slots:
     void solve(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>* data);
 
 public:
     // accessors
-    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> image() {
-        return this->eit_solver()->dgamma();
-    }
     std::shared_ptr<mpFlow::EIT::solver::Solver<
         mpFlow::numeric::Conjugate>> eit_solver() {
         return this->eit_solver_;

@@ -16,7 +16,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::MainWindow), measurement_system_(nullptr),
-    solver_(nullptr), calibrator_(nullptr), image_pos_(0.0), image_increment_(0.0) {
+    solver_(nullptr), calibrator_(nullptr) {
     ui->setupUi(this);
     this->statusBar()->hide();
 
@@ -28,9 +28,8 @@ MainWindow::MainWindow(QWidget *parent) :
         cudaSetDevice(0);
     }
 
-    // create timer
-    this->draw_timer_ = new QTimer(this);
-    connect(this->draw_timer_, &QTimer::timeout, this, &MainWindow::draw);
+    this->analysis_timer_ = new QTimer(this);
+    connect(this->analysis_timer_, &QTimer::timeout, this, &MainWindow::analyse);
 
     // create measurement system
     this->measurement_system_ = new MeasurementSystem();
@@ -62,6 +61,9 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::initTable() {
+    this->addAnalysis("system fps:", "", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
+        return 1e3 / (20.0 / this->ui->image->image_increment());
+    });
     this->addAnalysis("solve time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
         return this->solver()->solve_time();
     });
@@ -76,14 +78,14 @@ void MainWindow::initTable() {
     this->addAnalysis("min:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
         mpFlow::dtype::real result = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
-            result = std::min((*values)(i, this->image_pos()), result);
+            result = std::min((*values)(i, this->ui->image->image_pos()), result);
         }
         return result;
     });
     this->addAnalysis("max:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
         mpFlow::dtype::real result = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
-            result = std::max((*values)(i, this->image_pos()), result);
+            result = std::max((*values)(i, this->ui->image->image_pos()), result);
         }
         return result;
     });
@@ -91,7 +93,7 @@ void MainWindow::initTable() {
         mpFlow::dtype::real rms = 0.0;
         mpFlow::dtype::real area = 0.0;
         for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
-            rms += mpFlow::math::square((*values)(i, this->image_pos())) * this->ui->image->element_area()[i];
+            rms += mpFlow::math::square((*values)(i, this->ui->image->image_pos())) * this->ui->image->element_area()[i];
             area += this->ui->image->element_area()[i];
         }
         return std::sqrt(rms / area);
@@ -128,35 +130,18 @@ void MainWindow::addAnalysis(QString name, QString unit,
         this->ui->analysis_table->rowCount() - 1, unit, analysis));
 }
 
-void MainWindow::draw() {
+void MainWindow::analyse() {
     if (this->solver()) {
-        // solve
-        auto image = this->solver()->image();
-/*        if (this->ui->actionCalibrator_Data->isChecked()) {
-            image = this->calibrator()->image();
-
-            // update image
-            this->ui->image->draw(image);
-        } else {*/
-            // update image
-            this->ui->image->draw(image, (int)this->image_pos());
-            this->image_pos() += this->image_increment();
-            if (this->image_pos() >= (double)image->columns()) {
-                this->image_pos() = (double)image->columns() - 1.0;
-                this->image_increment() = 0.0;
-            }
-//        }
-
         // evaluate analysis functions
         for (const auto& analysis : this->analysis()) {
             this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
-                QString("%1 ").arg(std::get<2>(analysis)(image)) + std::get<1>(analysis));
+                QString("%1 ").arg(std::get<2>(analysis)(this->solver()->eit_solver()->dgamma())) + std::get<1>(analysis));
         }
 
         if (this->calibrator()->running()) {
             std::ofstream file;
             file.open("out/rms.txt", std::ofstream::out | std::ofstream::app);
-            file << std::get<2>(this->analysis()[5])(image) << std::endl;
+            file << std::get<2>(this->analysis()[5])(this->solver()->eit_solver()->dgamma()) << std::endl;
             file.close();
         }
     }
@@ -170,7 +155,8 @@ void MainWindow::on_actionOpen_triggered() {
     // load solver
     if (file_name != "") {
         // stop drawing image
-        this->draw_timer().stop();
+        this->ui->image->cleanup();
+        this->analysis_timer_->stop();
 
         // cleanup old solver
         this->cleanupSolver();
@@ -191,8 +177,8 @@ void MainWindow::on_actionOpen_triggered() {
             config["model"].toObject()["mesh"].toObject(), nullptr);
 
         // create new Solver from config
-        this->solver_ = new Solver(config, std::get<0>(mesh), std::get<1>(mesh),
-            std::get<2>(mesh), 16, 0);
+        this->solver_ = new Solver(config, std::get<0>(mesh), std::get<1>(mesh), std::get<2>(mesh),
+            16, 0);
         connect(this->solver(), &Solver::initialized, this, &MainWindow::solver_initialized);
 
         // create auto calibrator
@@ -306,10 +292,12 @@ void MainWindow::on_actionVersion_triggered() {
 void MainWindow::solver_initialized(bool success) {
     if (success) {
         // init image
-        this->draw_timer().stop();
-        this->ui->image->init(this->solver()->eit_solver()->forward_solver()->model());
-        this->ui->image->draw(this->solver()->eit_solver()->dgamma());
-        this->draw_timer().start(20);
+        this->ui->image->init(this->solver()->eit_solver()->forward_solver()->model(),
+            this->solver()->eit_solver()->dgamma()->rows(),
+            this->solver()->eit_solver()->dgamma()->columns());
+        qRegisterMetaType<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>(
+            "std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>");
+        connect(this->solver(), &Solver::data_ready, this->ui->image, &Image::update_data);
 
         // set correct matrix for measurement system with meta object method call
         // to ensure matrix update not during data read or write
@@ -319,7 +307,8 @@ void MainWindow::solver_initialized(bool success) {
             Q_ARG(mpFlow::dtype::index, this->solver()->eit_solver()->measurement()[0]->rows()),
             Q_ARG(mpFlow::dtype::index, this->solver()->eit_solver()->measurement()[0]->columns()));
         connect(this->measurement_system(), &MeasurementSystem::data_ready, this->solver(), &Solver::solve);
-        connect(this->solver(), &Solver::data_ready, this, &MainWindow::update_image_increment);
+        connect(this->solver(), &Solver::data_ready, this->ui->image, &Image::update_data);
+        this->analysis_timer_->start(20);
     } else {
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot load solver from config!"));
@@ -333,10 +322,4 @@ void MainWindow::calibrator_initialized(bool success) {
     } else {
         // connect(this->calibrator()->timer(), &QTimer::timeout, this->solver(), &Solver::solve);
     }
-}
-
-void MainWindow::update_image_increment(int time_elapsed) {
-    this->image_pos() = 0.0;
-    this->image_increment() = time_elapsed > 20 ? 20.0 / (double)time_elapsed *
-        (double)this->solver()->eit_solver()->measurement().size() : 0.0;
 }

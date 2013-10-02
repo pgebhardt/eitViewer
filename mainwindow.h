@@ -22,7 +22,7 @@ public:
     ~MainWindow();
     
 private slots:
-    void draw();
+    void analyse();
     void on_actionOpen_triggered();
     void on_actionExit_triggered();
     void on_actionLoad_Measurement_triggered();
@@ -35,7 +35,6 @@ private slots:
     void on_actionVersion_triggered();
     void solver_initialized(bool success);
     void calibrator_initialized(bool success);
-    void update_image_increment(int time_elapsed);
 
 protected:
     void initTable();
@@ -49,24 +48,19 @@ public:
     MeasurementSystem* measurement_system() { return this->measurement_system_; }
     Solver* solver() { return this->solver_; }
     Calibrator* calibrator() { return this->calibrator_; }
-    QTimer& draw_timer() { return *this->draw_timer_; }
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>&
         analysis() { return this->analysis_; }
-    double& image_pos() { return this->image_pos_; }
-    double& image_increment() { return this->image_increment_; }
 
 private:
     Ui::MainWindow *ui;
     MeasurementSystem* measurement_system_;
     Solver* solver_;
     Calibrator* calibrator_;
-    QTimer* draw_timer_;
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>
         analysis_;
-    double image_pos_;
-    double image_increment_;
+    QTimer* analysis_timer_;
 };
 
 #endif // MAINWINDOW_H
