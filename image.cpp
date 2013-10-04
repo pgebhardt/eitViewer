@@ -188,7 +188,7 @@ void Image::update_gl_buffer() {
     this->image_pos() += this->image_increment();
     if (this->image_pos() >= (double)this->data()->columns()) {
         this->image_pos() = (double)this->data()->columns() - 1.0;
-        this->image_increment() = 0.0;
+        // this->image_increment() = 0.0;
     }
 
     // redraw

@@ -225,10 +225,10 @@ void MainWindow::on_actionSave_Measurement_triggered() {
 
         // save measurement to file
         if (file_name != "") {
-            this->measurement_system()->measurement_buffer()[0]->copyToHost(nullptr);
+            this->solver()->eit_solver()->measurement()[0]->copyToHost(nullptr);
             cudaStreamSynchronize(nullptr);
             mpFlow::numeric::matrix::savetxt(file_name.toStdString(),
-                this->measurement_system()->measurement_buffer()[0]);
+                this->solver()->eit_solver()->measurement()[0]);
         }
     }
 }
