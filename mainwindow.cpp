@@ -28,15 +28,14 @@ MainWindow::MainWindow(QWidget *parent) :
         cudaSetDevice(0);
     }
 
-    this->analysis_timer_ = new QTimer(this);
-    connect(this->analysis_timer_, &QTimer::timeout, this, &MainWindow::analyse);
-
     // create measurement system
     this->measurement_system_ = new MeasurementSystem();
 
     // TODO
     // init table widget
     this->initTable();
+    this->analysis_timer_ = new QTimer(this);
+    connect(this->analysis_timer_, &QTimer::timeout, this, &MainWindow::analyse);
 
     // enable auto calibrator menu items
     if (this->hasMultiGPU()) {
@@ -154,7 +153,7 @@ void MainWindow::on_actionOpen_triggered() {
     // load solver
     if (file_name != "") {
         // stop drawing image
-        this->ui->image->cleanup();
+        // this->ui->image->cleanup();
         this->analysis_timer_->stop();
 
         // cleanup old solver
@@ -176,8 +175,9 @@ void MainWindow::on_actionOpen_triggered() {
             config["model"].toObject()["mesh"].toObject(), nullptr);
 
         // create new Solver from config
+        mpFlow::dtype::index parallel_images = config["solver"].toObject()["parallel_images"].toDouble();
         this->solver_ = new Solver(config, std::get<0>(mesh), std::get<1>(mesh), std::get<2>(mesh),
-            16, 0);
+            parallel_images == 0 ? 1 : parallel_images, 0);
         connect(this->solver(), &Solver::initialized, this, &MainWindow::solver_initialized);
 
         // create auto calibrator
@@ -303,6 +303,8 @@ void MainWindow::solver_initialized(bool success) {
             Q_ARG(mpFlow::dtype::index, this->solver()->eit_solver()->measurement()[0]->columns()));
         connect(this->measurement_system(), &MeasurementSystem::data_ready, this->solver(), &Solver::solve);
         connect(this->solver(), &Solver::data_ready, this->ui->image, &Image::update_data);
+
+        // TODO
         this->analysis_timer_->start(20);
     } else {
         QMessageBox::information(this, this->windowTitle(),
@@ -314,7 +316,5 @@ void MainWindow::calibrator_initialized(bool success) {
     if (!success) {
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot create calibrator!"));
-    } else {
-        // connect(this->calibrator()->timer(), &QTimer::timeout, this->solver(), &Solver::solve);
     }
 }
