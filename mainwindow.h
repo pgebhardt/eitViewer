@@ -30,7 +30,6 @@ private slots:
     void on_actionCalibrate_triggered();
     void on_actionAuto_Calibrate_toggled(bool arg1);
     void on_actionCalibrator_Settings_triggered();
-    void on_actionAnalysis_Table_toggled(bool arg1);
     void on_actionSave_Image_triggered();
     void on_actionVersion_triggered();
     void solver_initialized(bool success);

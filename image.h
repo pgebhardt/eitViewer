@@ -17,6 +17,7 @@ public:
     void cleanup();
 
 public slots:
+    void reset_view();
     void update_data(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data,
         int time_elapsed);
     void update_gl_buffer();

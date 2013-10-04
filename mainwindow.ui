@@ -113,7 +113,7 @@
      <x>0</x>
      <y>0</y>
      <width>1054</width>
-     <height>28</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuSolver">
@@ -132,8 +132,8 @@
      <string>View</string>
     </property>
     <addaction name="actionAnalysis_Table"/>
-    <addaction name="actionCalibrator_Data"/>
     <addaction name="actionSave_Image"/>
+    <addaction name="actionReset_View"/>
    </widget>
    <widget class="QMenu" name="menuFile">
     <property name="title">
@@ -252,17 +252,6 @@
     <string>Auto Calibrate</string>
    </property>
   </action>
-  <action name="actionCalibrator_Data">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Calibrator Data</string>
-   </property>
-  </action>
   <action name="actionCalibrator_Settings">
    <property name="enabled">
     <bool>false</bool>
@@ -287,6 +276,11 @@
     <string>Version</string>
    </property>
   </action>
+  <action name="actionReset_View">
+   <property name="text">
+    <string>Reset View</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -295,8 +289,44 @@
    <extends>QWidget</extends>
    <header>image.h</header>
    <container>1</container>
+   <slots>
+    <slot>reset_view()</slot>
+   </slots>
   </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>actionReset_View</sender>
+   <signal>triggered()</signal>
+   <receiver>image</receiver>
+   <slot>reset_view()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>398</x>
+     <y>421</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionAnalysis_Table</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>analysis_table</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>925</x>
+     <y>421</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

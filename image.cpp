@@ -104,6 +104,12 @@ void Image::cleanup() {
     }
 }
 
+void Image::reset_view() {
+    this->x_angle() = 0.0;
+    this->z_angle() = 0.0;
+    this->threashold() = 0.1;
+}
+
 void Image::update_data(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data,
     int time_elapsed) {
     this->data()->copy(data, nullptr);

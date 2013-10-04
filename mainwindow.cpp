@@ -42,7 +42,6 @@ MainWindow::MainWindow(QWidget *parent) :
     if (this->hasMultiGPU()) {
         this->ui->actionAuto_Calibrate->setEnabled(true);
         this->ui->actionCalibrator_Settings->setEnabled(true);
-        this->ui->actionCalibrator_Data->setEnabled(true);
     }
 }
 
@@ -135,13 +134,13 @@ void MainWindow::analyse() {
         // evaluate analysis functions
         for (const auto& analysis : this->analysis()) {
             this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
-                QString("%1 ").arg(std::get<2>(analysis)(this->solver()->eit_solver()->dgamma())) + std::get<1>(analysis));
+                QString("%1 ").arg(std::get<2>(analysis)(this->ui->image->data())) + std::get<1>(analysis));
         }
 
         if (this->calibrator()->running()) {
             std::ofstream file;
             file.open("out/rms.txt", std::ofstream::out | std::ofstream::app);
-            file << std::get<2>(this->analysis()[5])(this->solver()->eit_solver()->dgamma()) << std::endl;
+            file << std::get<2>(this->analysis()[5])(this->ui->image->data()) << std::endl;
             file.close();
         }
     }
@@ -263,10 +262,6 @@ void MainWindow::on_actionCalibrator_Settings_triggered() {
         CalibratorDialog dialog(this->calibrator(), this);
         dialog.exec();
     }
-}
-
-void MainWindow::on_actionAnalysis_Table_toggled(bool arg1) {
-    this->ui->analysis_table->setVisible(arg1);
 }
 
 void MainWindow::on_actionSave_Image_triggered() {
