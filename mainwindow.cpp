@@ -16,7 +16,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::MainWindow), measurement_system_(nullptr),
-    solver_(nullptr), calibrator_(nullptr) {
+    solver_(nullptr), calibrator_(nullptr), datalogger_(nullptr) {
     ui->setupUi(this);
     this->statusBar()->hide();
 
@@ -30,6 +30,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create measurement system
     this->measurement_system_ = new MeasurementSystem();
+
+    // create data logger
+    this->datalogger_ = new DataLogger();
+    connect(this->ui->actionReset_DataLogger, &QAction::triggered, this->datalogger(), &DataLogger::reset_log);
 
     // TODO
     // init table widget
@@ -134,13 +138,6 @@ void MainWindow::analyse() {
         for (const auto& analysis : this->analysis()) {
             this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
                 QString("%1 ").arg(std::get<2>(analysis)(this->ui->image->data())) + std::get<1>(analysis));
-        }
-
-        if (this->calibrator()->running()) {
-            std::ofstream file;
-            file.open("out/rms.txt", std::ofstream::out | std::ofstream::app);
-            file << std::get<2>(this->analysis()[5])(this->ui->image->data()) << std::endl;
-            file.close();
         }
     }
 }
@@ -278,6 +275,42 @@ void MainWindow::on_actionSave_Image_triggered() {
     }
 }
 
+void MainWindow::on_actionRun_DataLogger_toggled(bool arg1) {
+    if (arg1) {
+        this->datalogger()->start_logging();
+    } else {
+        this->datalogger()->stop_logging();
+    }
+}
+
+void MainWindow::on_actionSave_DataLogger_triggered() {
+    if (this->solver()) {
+        // get save file name
+        QString file_name = QFileDialog::getSaveFileName(
+            this, "Save Log", "", "Log File (*.log)");
+
+        // save mesh adn data log
+        if (file_name != "") {
+            // save nodes and elements
+            mpFlow::numeric::matrix::savetxt((file_name + ".nodes").toStdString(),
+                this->solver()->eit_solver()->forward_solver()->model()->mesh()->nodes());
+            mpFlow::numeric::matrix::savetxt((file_name + ".elements").toStdString(),
+                this->solver()->eit_solver()->forward_solver()->model()->mesh()->elements());
+
+            // save log
+            std::ofstream file;
+            file.open(file_name.toStdString().c_str());
+            if (file.fail()) {
+                QMessageBox::information(this, this->windowTitle(),
+                    tr("Cannot save log!"));
+            }
+
+            this->datalogger()->dump(&file);
+            file.close();
+        }
+    }
+}
+
 void MainWindow::on_actionVersion_triggered() {
     // Show about box with version number
     QMessageBox::about(this, this->windowTitle(), tr("%1: %2\nmpFlow: %3").arg(
@@ -303,6 +336,7 @@ void MainWindow::solver_initialized(bool success) {
             Q_ARG(mpFlow::dtype::index, this->solver()->eit_solver()->measurement()[0]->columns()));
         connect(this->measurement_system(), &MeasurementSystem::data_ready, this->solver(), &Solver::solve);
         connect(this->solver(), &Solver::data_ready, this->ui->image, &Image::update_data);
+        connect(this->solver(), &Solver::data_ready, this->datalogger(), &DataLogger::add_data);
 
         // TODO
         this->analysis_timer_->start(20);

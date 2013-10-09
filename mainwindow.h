@@ -9,6 +9,7 @@
 #include "measurementsystem.h"
 #include "solver.h"
 #include "calibrator.h"
+#include "datalogger.h"
 
 namespace Ui {
 class MainWindow;
@@ -31,6 +32,8 @@ private slots:
     void on_actionAuto_Calibrate_toggled(bool arg1);
     void on_actionCalibrator_Settings_triggered();
     void on_actionSave_Image_triggered();
+    void on_actionRun_DataLogger_toggled(bool arg1);
+    void on_actionSave_DataLogger_triggered();
     void on_actionVersion_triggered();
     void solver_initialized(bool success);
     void calibrator_initialized(bool success);
@@ -47,6 +50,7 @@ public:
     MeasurementSystem* measurement_system() { return this->measurement_system_; }
     Solver* solver() { return this->solver_; }
     Calibrator* calibrator() { return this->calibrator_; }
+    DataLogger* datalogger() { return this->datalogger_; }
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>&
         analysis() { return this->analysis_; }
@@ -56,6 +60,7 @@ private:
     MeasurementSystem* measurement_system_;
     Solver* solver_;
     Calibrator* calibrator_;
+    DataLogger* datalogger_;
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>
         analysis_;

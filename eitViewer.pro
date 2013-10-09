@@ -20,7 +20,8 @@ SOURCES += main.cpp\
     solver.cpp \
     calibrator.cpp \
     firfilter.cpp \
-    calibratordialog.cpp
+    calibratordialog.cpp \
+    datalogger.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
@@ -28,7 +29,8 @@ HEADERS  += mainwindow.h \
     solver.h \
     calibrator.h \
     firfilter.h \
-    calibratordialog.h
+    calibratordialog.h \
+    datalogger.h
 
 FORMS    += mainwindow.ui \
     calibratordialog.ui
