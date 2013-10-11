@@ -66,6 +66,9 @@ void MainWindow::initTable() {
     this->addAnalysis("system fps:", "", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
         return 1e3 / (20.0 / this->ui->image->image_increment());
     });
+    this->addAnalysis("latency:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
+        return 20.0 / this->ui->image->image_increment() * this->solver()->eit_solver()->measurement().size() + this->solver()->solve_time();
+    });
     this->addAnalysis("solve time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
         return this->solver()->solve_time();
     });

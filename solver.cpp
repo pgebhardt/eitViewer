@@ -127,7 +127,8 @@ Solver::Solver(const QJsonObject& config,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
     int parallel_images, int cuda_device, QObject *parent) :
-    QObject(parent), cuda_stream_(nullptr), cublas_handle_(nullptr), cuda_device_(cuda_device) {
+    QObject(parent), solve_time_(0), cuda_stream_(nullptr), cublas_handle_(nullptr),
+    cuda_device_(cuda_device) {
     // init separate thread
     this->thread_ = new QThread(this);
     this->moveToThread(this->thread());

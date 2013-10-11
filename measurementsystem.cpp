@@ -72,6 +72,7 @@ void MeasurementSystem::readyRead() {
 
             // emit signal for new data package ready
             emit this->data_ready(&this->measurement_buffer(), this->time().elapsed());
+            std::cout << this->time().elapsed() << std::endl;
             this->time().restart();
         }
     }
