@@ -2,12 +2,9 @@
 #include <mpflow/mpflow.h>
 #include <QtCore>
 #include <QtGui>
-#include <QHostAddress>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QJsonDocument>
-#include <iostream>
-#include <sstream>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "image.h"
@@ -66,14 +63,14 @@ void MainWindow::initTable() {
         return 1e3 / (20.0 / this->ui->image->image_increment());
     });
     this->addAnalysis("latency:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
-        return 20.0 / this->ui->image->image_increment() * this->solver()->eit_solver()->measurement().size() + this->solver()->solve_time();
+        return 20.0 / this->ui->image->image_increment() * this->solver()->eit_solver()->measurement().size() + this->solver()->solve_time() * 1e3;
     });
     this->addAnalysis("solve time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
-        return this->solver()->solve_time();
+        return this->solver()->solve_time() * 1e3;
     });
     if (this->hasMultiGPU()) {
         this->addAnalysis("calibrate time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
-            return this->calibrator()->solve_time();
+            return this->calibrator()->solve_time() * 1e3;
         });
     }
     this->addAnalysis("normalization threashold:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {

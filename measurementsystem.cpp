@@ -58,8 +58,8 @@ void MeasurementSystem::readyRead() {
     // emit data_ready signal when buffer is full
     if (this->buffer_pos() >= this->measurement_buffer().size()) {
         // upload measurement buffer to gpu
-        for (mpFlow::dtype::index i = 0; i < this->measurement_buffer().size(); ++i) {
-            this->measurement_buffer()[i]->copyToDevice(nullptr);
+        for (auto measurement : this->measurement_buffer()) {
+            measurement->copyToDevice(nullptr);
         }
         cudaStreamSynchronize(nullptr);
 

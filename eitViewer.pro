@@ -21,7 +21,8 @@ SOURCES += main.cpp\
     calibrator.cpp \
     firfilter.cpp \
     calibratordialog.cpp \
-    datalogger.cpp
+    datalogger.cpp \
+    highprecisiontime.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
@@ -30,7 +31,8 @@ HEADERS  += mainwindow.h \
     calibrator.h \
     firfilter.h \
     calibratordialog.h \
-    datalogger.h
+    datalogger.h \
+    highprecisiontime.h
 
 FORMS    += mainwindow.ui \
     calibratordialog.ui

@@ -111,14 +111,14 @@ void Image::reset_view() {
 }
 
 void Image::update_data(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data,
-    int time_elapsed) {
+    double time_elapsed) {
     this->data()->copy(data, nullptr);
     this->data()->copyToHost(nullptr);
     cudaStreamSynchronize(nullptr);
 
     // update image increments
     this->image_pos() = 0.0;
-    this->image_increment() = time_elapsed > 20 ? 20.0 / (double)time_elapsed *
+    this->image_increment() = time_elapsed > 0.02 ? 0.02 / time_elapsed *
         (double)this->data()->columns() : 0.0;
 }
 
