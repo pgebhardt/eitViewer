@@ -20,14 +20,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     this->statusBar()->hide();
 
-    // enable peer access for 2 gpus
-    if (this->hasMultiGPU()) {
-        cudaDeviceEnablePeerAccess(1, 0);
-        cudaSetDevice(1);
-        cudaDeviceEnablePeerAccess(0, 0);
-        cudaSetDevice(0);
-    }
-
     // create measurement system
     this->measurement_system_ = new MeasurementSystem();
 
@@ -41,8 +33,15 @@ MainWindow::MainWindow(QWidget *parent) :
     this->analysis_timer_ = new QTimer(this);
     connect(this->analysis_timer_, &QTimer::timeout, this, &MainWindow::analyse);
 
-    // enable auto calibrator menu items
+    // set up environment for auto calibrator, if system has multi gpus
     if (this->hasMultiGPU()) {
+        // enable peer access for 2 gpus
+        cudaDeviceEnablePeerAccess(1, 0);
+        cudaSetDevice(1);
+        cudaDeviceEnablePeerAccess(0, 0);
+        cudaSetDevice(0);
+
+        // enable menu items
         this->ui->actionAuto_Calibrate->setEnabled(true);
         this->ui->actionCalibrator_Settings->setEnabled(true);
     }
