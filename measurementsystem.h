@@ -19,7 +19,10 @@ signals:
 public slots:
     void init(mpFlow::dtype::index buffer_size, mpFlow::dtype::index rows,
         mpFlow::dtype::index columns);
-    virtual void readyRead();
+    void readyRead();
+    void manual_override(std::shared_ptr<mpFlow::numeric::Matrix<
+        mpFlow::dtype::real>> data);
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> get_current_measurement();
 
 public:
     // accessors

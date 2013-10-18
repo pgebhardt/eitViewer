@@ -186,12 +186,9 @@ void MainWindow::on_actionLoad_Measurement_triggered() {
         if (file_name != "") {
             // load matrix
             try {
-                auto voltage = mpFlow::numeric::matrix::loadtxt<mpFlow::dtype::real>(file_name.toStdString(), nullptr);
-                for (auto& measurement : this->measurement_system()->measurement_buffer()) {
-                    measurement->copy(voltage, nullptr);
-                }
-                emit this->measurement_system()->data_ready(
-                    &this->measurement_system()->measurement_buffer());
+                this->measurement_system()->manual_override(
+                    mpFlow::numeric::matrix::loadtxt<mpFlow::dtype::real>(file_name.toStdString(),
+                        nullptr));
             } catch(const std::exception&) {
                 QMessageBox::information(this, this->windowTitle(), "Cannot load measurement matrix!");
             }
@@ -211,10 +208,10 @@ void MainWindow::on_actionSave_Measurement_triggered() {
 
         // save measurement to file
         if (file_name != "") {
-            this->solver()->eit_solver()->measurement()[0]->copyToHost(nullptr);
+            auto measurement = this->measurement_system()->get_current_measurement();
+            measurement->copyToHost(nullptr);
             cudaStreamSynchronize(nullptr);
-            mpFlow::numeric::matrix::savetxt(file_name.toStdString(),
-                this->solver()->eit_solver()->measurement()[0]);
+            mpFlow::numeric::matrix::savetxt(file_name.toStdString(), measurement);
         }
 
         // save current file name

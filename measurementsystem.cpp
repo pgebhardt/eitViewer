@@ -72,3 +72,14 @@ void MeasurementSystem::readyRead() {
     }
 }
 
+void MeasurementSystem::manual_override(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data) {
+    for (auto measurement : this->measurement_buffer()) {
+        measurement->copy(data, nullptr);
+    }
+    emit this->data_ready(&this->measurement_buffer(), this->time().elapsed());
+    this->time().restart();
+}
+
+std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> MeasurementSystem::get_current_measurement() {
+    return this->measurement_buffer()[this->buffer_pos()];
+}
