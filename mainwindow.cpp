@@ -13,7 +13,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::MainWindow), measurement_system_(nullptr),
-    solver_(nullptr), calibrator_(nullptr), datalogger_(nullptr) {
+    solver_(nullptr), calibrator_(nullptr), datalogger_(nullptr), open_file_name_("") {
     ui->setupUi(this);
     this->statusBar()->hide();
 
@@ -45,8 +45,8 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 
 MainWindow::~MainWindow() {
-    // cleanup solver
-    this->cleanupSolver();
+    // close solver
+    this->close_solver();
 
     // cleanup measurement system
     if (this->measurement_system()) {
@@ -101,22 +101,6 @@ void MainWindow::initTable() {
     });
 }
 
-void MainWindow::cleanupSolver() {
-    if (this->calibrator()) {
-        this->calibrator()->thread()->quit();
-        this->calibrator()->thread()->wait();
-        delete this->calibrator();
-        this->calibrator_ = nullptr;
-    }
-    if (this->solver()) {
-        disconnect(this->measurement_system(), &MeasurementSystem::data_ready, this->solver(), &Solver::solve);
-        this->solver()->thread()->quit();
-        this->solver()->thread()->wait();
-        delete this->solver();
-        this->solver_ = nullptr;
-    }
-}
-
 void MainWindow::addAnalysis(QString name, QString unit,
     std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)> analysis) {
     // create new table row and table items
@@ -144,16 +128,13 @@ void MainWindow::analyse() {
 void MainWindow::on_actionOpen_triggered() {
     // get open file name
     QString file_name = QFileDialog::getOpenFileName(
-        this, "Load Solver", "", "Solver File (*.conf)");
+        this, "Load Solver", this->open_file_name(),
+        "Solver File (*.conf)");
 
     // load solver
     if (file_name != "") {
-        // stop drawing image
-        // this->ui->image->cleanup();
-        this->analysis_timer_->stop();
-
-        // cleanup old solver
-        this->cleanupSolver();
+        // close current solver
+        this->close_solver();
 
         // open file
         QFile file(file_name);
@@ -183,6 +164,9 @@ void MainWindow::on_actionOpen_triggered() {
             connect(this->calibrator(), &Calibrator::initialized, this,
                 &MainWindow::calibrator_initialized);
         }
+
+        // save current file name
+        this->open_file_name() = file_name;
     }
 }
 
@@ -196,19 +180,24 @@ void MainWindow::on_actionLoad_Measurement_triggered() {
     if (this->solver()) {
         // get load file name
         QString file_name = QFileDialog::getOpenFileName(
-            this, "Load Measurement", "", "Matrix File (*.txt)");
+            this, "Load Measurement", this->open_file_name(),
+             "Matrix File (*.txt)");
 
         if (file_name != "") {
             // load matrix
             try {
                 auto voltage = mpFlow::numeric::matrix::loadtxt<mpFlow::dtype::real>(file_name.toStdString(), nullptr);
-                this->measurement_system()->measurement_buffer()[0]->copy(voltage, nullptr);
-                this->measurement_system()->buffer_pos() = 0;
-                emit this->measurement_system()->data_ready(&this->measurement_system()
-                    ->measurement_buffer());
+                for (auto& measurement : this->measurement_system()->measurement_buffer()) {
+                    measurement->copy(voltage, nullptr);
+                }
+                emit this->measurement_system()->data_ready(
+                    &this->measurement_system()->measurement_buffer());
             } catch(const std::exception&) {
                 QMessageBox::information(this, this->windowTitle(), "Cannot load measurement matrix!");
             }
+
+            // save current file name
+            this->open_file_name() = file_name;
         }
     }
 }
@@ -217,7 +206,8 @@ void MainWindow::on_actionSave_Measurement_triggered() {
     if (this->solver()) {
         // get save file name
         QString file_name = QFileDialog::getSaveFileName(
-            this, "Save Measurement", "", "Matrix File (*.txt)");
+            this, "Save Measurement", this->open_file_name(),
+            "Matrix File (*.txt)");
 
         // save measurement to file
         if (file_name != "") {
@@ -226,6 +216,9 @@ void MainWindow::on_actionSave_Measurement_triggered() {
             mpFlow::numeric::matrix::savetxt(file_name.toStdString(),
                 this->solver()->eit_solver()->measurement()[0]);
         }
+
+        // save current file name
+        this->open_file_name() = file_name;
     }
 }
 
@@ -349,5 +342,28 @@ void MainWindow::calibrator_initialized(bool success) {
     if (!success) {
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot create calibrator!"));
+    }
+}
+
+void MainWindow::close_solver() {
+    // stop drawing image
+    this->ui->image->cleanup();
+    this->analysis_timer_->stop();
+
+    // stop and cleanup auto calibartor
+    if (this->calibrator()) {
+        this->calibrator()->thread()->quit();
+        this->calibrator()->thread()->wait();
+        delete this->calibrator();
+        this->calibrator_ = nullptr;
+    }
+
+    // stop and cleanup solver
+    if (this->solver()) {
+        disconnect(this->measurement_system(), &MeasurementSystem::data_ready, this->solver(), &Solver::solve);
+        this->solver()->thread()->quit();
+        this->solver()->thread()->wait();
+        delete this->solver();
+        this->solver_ = nullptr;
     }
 }

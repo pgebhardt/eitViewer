@@ -94,6 +94,10 @@ void Image::cleanup() {
     // stop timer
     this->draw_timer().stop();
 
+    // reset view
+    this->reset_view();
+
+    // clear opneGL buffer
     if (this->vertices_) {
         delete [] this->vertices_;
         this->vertices_ = nullptr;
@@ -102,6 +106,9 @@ void Image::cleanup() {
         delete [] this->colors_;
         this->colors_ = nullptr;
     }
+
+    // redraw
+    this->updateGL();
 }
 
 void Image::reset_view() {

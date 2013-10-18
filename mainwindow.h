@@ -37,11 +37,11 @@ private slots:
     void on_actionVersion_triggered();
     void solver_initialized(bool success);
     void calibrator_initialized(bool success);
+    void close_solver();
 
 protected:
     void initTable();
     bool hasMultiGPU() { int devCount = 0; cudaGetDeviceCount(&devCount); return devCount > 1; }
-    void cleanupSolver();
     void addAnalysis(QString name, QString unit, std::function<mpFlow::dtype::real(
         std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)> analysis);
 
@@ -54,6 +54,7 @@ public:
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>&
         analysis() { return this->analysis_; }
+    QString& open_file_name() { return this->open_file_name_; }
 
 private:
     Ui::MainWindow *ui;
@@ -65,6 +66,7 @@ private:
         std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>
         analysis_;
     QTimer* analysis_timer_;
+    QString open_file_name_;
 };
 
 #endif // MAINWINDOW_H

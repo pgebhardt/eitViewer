@@ -15,16 +15,7 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <property name="leftMargin">
-     <number>0</number>
-    </property>
-    <property name="topMargin">
-     <number>0</number>
-    </property>
-    <property name="rightMargin">
-     <number>0</number>
-    </property>
-    <property name="bottomMargin">
+    <property name="margin">
      <number>0</number>
     </property>
     <item row="0" column="0">
@@ -33,23 +24,14 @@
        <bool>true</bool>
       </property>
       <layout class="QGridLayout" name="gridLayout_3" columnstretch="1,0">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
-        <number>0</number>
-       </property>
        <property name="horizontalSpacing">
         <number>0</number>
        </property>
        <property name="verticalSpacing">
         <number>6</number>
+       </property>
+       <property name="margin">
+        <number>0</number>
        </property>
        <item row="0" column="1">
         <widget class="QTableWidget" name="analysis_table">
@@ -141,6 +123,7 @@
     </property>
     <addaction name="actionOpen"/>
     <addaction name="separator"/>
+    <addaction name="actionClose_Solver"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuInfo">
@@ -318,6 +301,14 @@
     <string>Run Data Logging</string>
    </property>
   </action>
+  <action name="actionClose_Solver">
+   <property name="text">
+    <string>Close</string>
+   </property>
+   <property name="toolTip">
+    <string>Close Solver</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -328,6 +319,7 @@
    <container>1</container>
    <slots>
     <slot>reset_view()</slot>
+    <slot>close_solver()</slot>
    </slots>
   </customwidget>
  </customwidgets>
@@ -365,5 +357,24 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionClose_Solver</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>close_solver()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>526</x>
+     <y>419</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
+ <slots>
+  <slot>close_solver()</slot>
+ </slots>
 </ui>
