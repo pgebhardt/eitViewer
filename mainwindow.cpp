@@ -154,7 +154,7 @@ void MainWindow::on_actionOpen_triggered() {
         // create new Solver from config
         mpFlow::dtype::index parallel_images = config["solver"].toObject()["parallel_images"].toDouble();
         this->solver_ = new Solver(config, std::get<0>(mesh), std::get<1>(mesh), std::get<2>(mesh),
-            parallel_images == 0 ? 1 : parallel_images, 0);
+            parallel_images == 0 ? 16 : parallel_images, 0);
         connect(this->solver(), &Solver::initialized, this, &MainWindow::solver_initialized);
 
         // create auto calibrator
