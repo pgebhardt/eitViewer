@@ -37,10 +37,6 @@ MainWindow::MainWindow(QWidget *parent) :
         cudaSetDevice(1);
         cudaDeviceEnablePeerAccess(0, 0);
         cudaSetDevice(0);
-
-        // enable menu items
-        this->ui->actionAuto_Calibrate->setEnabled(true);
-        this->ui->actionCalibrator_Settings->setEnabled(true);
     }
 }
 
@@ -116,12 +112,10 @@ void MainWindow::addAnalysis(QString name, QString unit,
 }
 
 void MainWindow::analyse() {
-    if (this->solver()) {
-        // evaluate analysis functions
-        for (const auto& analysis : this->analysis()) {
-            this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
-                QString("%1 ").arg(std::get<2>(analysis)(this->ui->image->data())) + std::get<1>(analysis));
-        }
+    // evaluate analysis functions
+    for (const auto& analysis : this->analysis()) {
+        this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
+            QString("%1 ").arg(std::get<2>(analysis)(this->ui->image->data())) + std::get<1>(analysis));
     }
 }
 
@@ -140,6 +134,9 @@ void MainWindow::on_actionOpen_triggered() {
         QFile file(file_name);
         file.open(QIODevice::ReadOnly | QIODevice::Text);
 
+        // update window title
+        this->setWindowTitle(tr("eitViewer") + " - " + file.fileName());
+
         // read json config
         QString str;
         str = file.readAll();
@@ -156,6 +153,7 @@ void MainWindow::on_actionOpen_triggered() {
         this->solver_ = new Solver(config, std::get<0>(mesh), std::get<1>(mesh), std::get<2>(mesh),
             parallel_images == 0 ? 16 : parallel_images, 0);
         connect(this->solver(), &Solver::initialized, this, &MainWindow::solver_initialized);
+        connect(this->solver(), &Solver::initialized, this, &MainWindow::update_solver_menu_items);
 
         // create auto calibrator
         if (this->hasMultiGPU()) {
@@ -163,6 +161,8 @@ void MainWindow::on_actionOpen_triggered() {
                 std::get<0>(mesh), std::get<1>(mesh), std::get<2>(mesh), 1);
             connect(this->calibrator(), &Calibrator::initialized, this,
                 &MainWindow::calibrator_initialized);
+            connect(this->calibrator(), &Calibrator::initialized, this,
+                &MainWindow::update_calibrator_menu_items);
         }
 
         // save current file name
@@ -177,41 +177,19 @@ void MainWindow::on_actionExit_triggered() {
 }
 
 void MainWindow::on_actionLoad_Measurement_triggered() {
-    if (this->solver()) {
-        // get load file name
-        QString file_name = QFileDialog::getOpenFileName(
-            this, "Load Measurement", this->open_file_name(),
-             "Matrix File (*.txt)");
+    // get load file name
+    QString file_name = QFileDialog::getOpenFileName(
+        this, "Load Measurement", this->open_file_name(),
+         "Matrix File (*.txt)");
 
-        if (file_name != "") {
-            // load matrix
-            try {
-                this->measurement_system()->manual_override(
-                    mpFlow::numeric::matrix::loadtxt<mpFlow::dtype::real>(file_name.toStdString(),
-                        nullptr));
-            } catch(const std::exception&) {
-                QMessageBox::information(this, this->windowTitle(), "Cannot load measurement matrix!");
-            }
-
-            // save current file name
-            this->open_file_name() = file_name;
-        }
-    }
-}
-
-void MainWindow::on_actionSave_Measurement_triggered() {
-    if (this->solver()) {
-        // get save file name
-        QString file_name = QFileDialog::getSaveFileName(
-            this, "Save Measurement", this->open_file_name(),
-            "Matrix File (*.txt)");
-
-        // save measurement to file
-        if (file_name != "") {
-            auto measurement = this->measurement_system()->get_current_measurement();
-            measurement->copyToHost(nullptr);
-            cudaStreamSynchronize(nullptr);
-            mpFlow::numeric::matrix::savetxt(file_name.toStdString(), measurement);
+    if (file_name != "") {
+        // load matrix
+        try {
+            this->measurement_system()->manual_override(
+                mpFlow::numeric::matrix::loadtxt<mpFlow::dtype::real>(file_name.toStdString(),
+                    nullptr));
+        } catch(const std::exception&) {
+            QMessageBox::information(this, this->windowTitle(), "Cannot load measurement matrix!");
         }
 
         // save current file name
@@ -219,35 +197,47 @@ void MainWindow::on_actionSave_Measurement_triggered() {
     }
 }
 
-void MainWindow::on_actionCalibrate_triggered() {
-    if (this->solver()) {
-        // set calibration voltage to current measurment voltage
-        for (mpFlow::dtype::index i = 0; i < this->solver()->eit_solver()->calculation().size(); ++i) {
-            this->solver()->eit_solver()->calculation()[i]->copy(
-                this->measurement_system()->measurement_buffer()[i], nullptr);
-        }
+void MainWindow::on_actionSave_Measurement_triggered() {
+    // get save file name
+    QString file_name = QFileDialog::getSaveFileName(
+        this, "Save Measurement", this->open_file_name(),
+        "Matrix File (*.txt)");
 
-        emit this->measurement_system()->data_ready(
-            &this->measurement_system()->measurement_buffer());
+    // save measurement to file
+    if (file_name != "") {
+        auto measurement = this->measurement_system()->get_current_measurement();
+        measurement->copyToHost(nullptr);
+        cudaStreamSynchronize(nullptr);
+        mpFlow::numeric::matrix::savetxt(file_name.toStdString(), measurement);
     }
+
+    // save current file name
+    this->open_file_name() = file_name;
+}
+
+void MainWindow::on_actionCalibrate_triggered() {
+    // set calibration voltage to current measurment voltage
+    for (mpFlow::dtype::index i = 0; i < this->solver()->eit_solver()->calculation().size(); ++i) {
+        this->solver()->eit_solver()->calculation()[i]->copy(
+            this->measurement_system()->measurement_buffer()[i], nullptr);
+    }
+
+    emit this->measurement_system()->data_ready(
+        &this->measurement_system()->measurement_buffer());
 }
 
 void MainWindow::on_actionAuto_Calibrate_toggled(bool arg1) {
-    if (this->calibrator()) {
-        if (arg1) {
-            QMetaObject::invokeMethod(this->calibrator(), "start",
-                Qt::AutoConnection, Q_ARG(int, this->calibrator()->step_size()));
-        } else {
-            QMetaObject::invokeMethod(this->calibrator(), "stop");
-        }
+    if (arg1) {
+        QMetaObject::invokeMethod(this->calibrator(), "start",
+            Qt::AutoConnection, Q_ARG(int, this->calibrator()->step_size()));
+    } else {
+        QMetaObject::invokeMethod(this->calibrator(), "stop");
     }
 }
 
 void MainWindow::on_actionCalibrator_Settings_triggered() {
-    if (this->calibrator()) {
-        CalibratorDialog dialog(this->calibrator(), this);
-        dialog.exec();
-    }
+    CalibratorDialog dialog(this->calibrator(), this);
+    dialog.exec();
 }
 
 void MainWindow::on_actionSave_Image_triggered() {
@@ -273,30 +263,28 @@ void MainWindow::on_actionRun_DataLogger_toggled(bool arg1) {
 }
 
 void MainWindow::on_actionSave_DataLogger_triggered() {
-    if (this->solver()) {
-        // get save file name
-        QString file_name = QFileDialog::getSaveFileName(
-            this, "Save Log", "", "Log File (*.log)");
+    // get save file name
+    QString file_name = QFileDialog::getSaveFileName(
+        this, "Save Log", "", "Log File (*.log)");
 
-        // save mesh adn data log
-        if (file_name != "") {
-            // save nodes and elements
-            mpFlow::numeric::matrix::savetxt((file_name + ".nodes").toStdString(),
-                this->solver()->eit_solver()->forward_solver()->model()->mesh()->nodes());
-            mpFlow::numeric::matrix::savetxt((file_name + ".elements").toStdString(),
-                this->solver()->eit_solver()->forward_solver()->model()->mesh()->elements());
+    // save mesh adn data log
+    if (file_name != "") {
+        // save nodes and elements
+        mpFlow::numeric::matrix::savetxt((file_name + ".nodes").toStdString(),
+            this->solver()->eit_solver()->forward_solver()->model()->mesh()->nodes());
+        mpFlow::numeric::matrix::savetxt((file_name + ".elements").toStdString(),
+            this->solver()->eit_solver()->forward_solver()->model()->mesh()->elements());
 
-            // save log
-            std::ofstream file;
-            file.open(file_name.toStdString().c_str());
-            if (file.fail()) {
-                QMessageBox::information(this, this->windowTitle(),
-                    tr("Cannot save log!"));
-            }
-
-            this->datalogger()->dump(&file);
-            file.close();
+        // save log
+        std::ofstream file;
+        file.open(file_name.toStdString().c_str());
+        if (file.fail()) {
+            QMessageBox::information(this, this->windowTitle(),
+                tr("Cannot save log!"));
         }
+
+        this->datalogger()->dump(&file);
+        file.close();
     }
 }
 
@@ -330,6 +318,9 @@ void MainWindow::solver_initialized(bool success) {
         // TODO
         this->analysis_timer_->start(20);
     } else {
+        // close all created solver stuff
+        this->close_solver();
+
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot load solver from config!"));
     }
@@ -337,9 +328,32 @@ void MainWindow::solver_initialized(bool success) {
 
 void MainWindow::calibrator_initialized(bool success) {
     if (!success) {
+        // close all created solver stuff
+        this->close_solver();
+
         QMessageBox::information(this, this->windowTitle(),
             tr("Cannot create calibrator!"));
     }
+}
+
+void MainWindow::update_solver_menu_items(bool success) {
+    // update menu items related to solver
+    this->ui->actionClose_Solver->setEnabled(success);
+    this->ui->actionLoad_Measurement->setEnabled(success);
+    this->ui->actionSave_Measurement->setEnabled(success);
+    this->ui->actionCalibrate->setEnabled(success);
+    this->ui->actionSave_Image->setEnabled(success);
+    this->ui->actionReset_View->setEnabled(success);
+    this->ui->actionRun_DataLogger->setEnabled(success);
+    this->ui->actionReset_DataLogger->setEnabled(success);
+    this->ui->actionSave_DataLogger->setEnabled(success);
+}
+
+void MainWindow::update_calibrator_menu_items(bool success) {
+    // update menu items related to solver
+    this->ui->actionAuto_Calibrate->setChecked(false);
+    this->ui->actionAuto_Calibrate->setEnabled(success);
+    this->ui->actionCalibrator_Settings->setEnabled(success);
 }
 
 void MainWindow::close_solver() {
@@ -347,8 +361,15 @@ void MainWindow::close_solver() {
     this->ui->image->cleanup();
     this->analysis_timer_->stop();
 
+    // reset window title
+    this->setWindowTitle(tr("eitViewer"));
+
     // stop and cleanup auto calibartor
     if (this->calibrator()) {
+        // dactivate menu items
+        this->update_calibrator_menu_items(false);
+
+        // cleanup calibrator
         this->calibrator()->thread()->quit();
         this->calibrator()->thread()->wait();
         delete this->calibrator();
@@ -357,6 +378,10 @@ void MainWindow::close_solver() {
 
     // stop and cleanup solver
     if (this->solver()) {
+        // disable menu items
+        this->update_solver_menu_items(false);
+
+        // cleanup solver
         disconnect(this->measurement_system(), &MeasurementSystem::data_ready, this->solver(), &Solver::solve);
         this->solver()->thread()->quit();
         this->solver()->thread()->wait();

@@ -37,6 +37,8 @@ private slots:
     void on_actionVersion_triggered();
     void solver_initialized(bool success);
     void calibrator_initialized(bool success);
+    void update_solver_menu_items(bool success);
+    void update_calibrator_menu_items(bool success);
     void close_solver();
 
 protected:
