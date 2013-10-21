@@ -26,7 +26,7 @@ public slots:
 
 public:
     // accessors
-    QUdpSocket& measurement_system_socket() { return *this->measurement_system_socket_; }
+    QUdpSocket* measurement_system_socket() { return this->measurement_system_socket_; }
     std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>& measurement_buffer() {
         return *this->measurement_buffer_;
     }

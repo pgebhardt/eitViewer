@@ -27,10 +27,11 @@ void MeasurementSystem::init(mpFlow::dtype::index buffer_size, mpFlow::dtype::in
     this->buffer_pos() = 0;
 
     // create udp socket
-    if (this->measurement_system_socket_ == nullptr) {
+    if (this->measurement_system_socket() == nullptr) {
         this->measurement_system_socket_ = new QUdpSocket(this);
-        this->measurement_system_socket().bind(3002, QUdpSocket::ShareAddress);
-        connect(&this->measurement_system_socket(), SIGNAL(readyRead()), this, SLOT(readyRead()));
+        this->measurement_system_socket()->bind(3002, QUdpSocket::ShareAddress);
+        connect(this->measurement_system_socket(), &QUdpSocket::readyRead,
+            this, &MeasurementSystem::readyRead);
     }
 
     this->time().restart();
@@ -41,7 +42,7 @@ void MeasurementSystem::readyRead() {
     QByteArray datagram;
     datagram.resize(this->measurement_buffer()[this->buffer_pos()]->rows() *
         this->measurement_buffer()[this->buffer_pos()]->columns() * 8);
-    this->measurement_system_socket().readDatagram(datagram.data(),
+    this->measurement_system_socket()->readDatagram(datagram.data(),
         datagram.size(), nullptr, nullptr);
 
     // extract measurement data
