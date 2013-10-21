@@ -97,6 +97,10 @@ void Image::cleanup() {
     // reset view
     this->reset_view();
 
+    // reset image buffer pos and increment
+    this->image_pos() = 0.0;
+    this->image_increment() = 0.0;
+
     // clear opneGL buffer
     if (this->vertices_) {
         delete [] this->vertices_;

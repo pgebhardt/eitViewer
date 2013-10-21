@@ -24,6 +24,7 @@ void MeasurementSystem::init(mpFlow::dtype::index buffer_size, mpFlow::dtype::in
         this->measurement_buffer()[i] = std::make_shared<mpFlow::numeric::Matrix<
             mpFlow::dtype::real>>(rows, columns, nullptr);
     }
+    this->buffer_pos() = 0;
 
     // create udp socket
     if (this->measurement_system_socket_ == nullptr) {
