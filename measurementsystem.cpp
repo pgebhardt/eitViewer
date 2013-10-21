@@ -38,19 +38,19 @@ void MeasurementSystem::init(mpFlow::dtype::index buffer_size, mpFlow::dtype::in
 }
 
 void MeasurementSystem::readyRead() {
-    // read measurement data for one excitation
+    // read measurement data from one udp datagram
     QByteArray datagram;
     datagram.resize(this->measurement_buffer()[this->buffer_pos()]->rows() *
-        this->measurement_buffer()[this->buffer_pos()]->columns() * 8);
+        this->measurement_buffer()[this->buffer_pos()]->columns() * sizeof(mpFlow::dtype::real));
     this->measurement_system_socket()->readDatagram(datagram.data(),
         datagram.size(), nullptr, nullptr);
 
     // extract measurement data
     QDataStream input_stream(datagram);
-    double data = 0.0;
+    mpFlow::dtype::real data = 0.0;
     for (mpFlow::dtype::index row = 0; row < this->measurement_buffer()[this->buffer_pos()]->rows(); ++row)
     for (mpFlow::dtype::index column = 0; column < this->measurement_buffer()[this->buffer_pos()]->columns(); ++column) {
-        input_stream >> data;
+        input_stream.readRawData((char*)&data, sizeof(data));
         (*this->measurement_buffer()[this->buffer_pos()])(row, column) = data;
     }
 
