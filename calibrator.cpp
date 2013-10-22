@@ -31,9 +31,12 @@ Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
 
 Calibrator::~Calibrator() {
     // cleanup filter
-    this->filter()->thread()->quit();
-    this->filter()->thread()->wait();
-    delete this->filter_;
+    if (this->filter()) {
+        this->filter()->thread()->quit();
+        this->filter()->thread()->wait();
+        delete this->filter_;
+        this->filter_ = nullptr;
+    }
 }
 
 void Calibrator::init_filter(int order, int step_size) {
