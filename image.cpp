@@ -86,8 +86,9 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
         }
     }
 
-    // start draw timer
-    this->draw_timer().start(20);
+    // redraw
+    this->update_gl_buffer();
+    this->updateGL();
 }
 
 void Image::cleanup() {
@@ -131,6 +132,9 @@ void Image::update_data(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::r
     this->image_pos() = 0.0;
     this->image_increment() = time_elapsed > 0.02 ? 0.02 / time_elapsed *
         (double)this->data()->columns() : 0.0;
+
+    // start draw timer
+    this->draw_timer().start(20);
 }
 
 void Image::update_gl_buffer() {
@@ -199,7 +203,9 @@ void Image::update_gl_buffer() {
     this->image_pos() += this->image_increment();
     if (this->image_pos() >= (double)this->data()->columns()) {
         this->image_pos() = (double)this->data()->columns() - 1.0;
-        // this->image_increment() = 0.0;
+
+        // stop draw timer
+        this->draw_timer().stop();
     }
 
     // redraw
@@ -209,10 +215,8 @@ void Image::update_gl_buffer() {
 void Image::initializeGL() {
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glEnable(GL_DEPTH_TEST);
-    glEnable (GL_LINE_SMOOTH);
-    glEnable (GL_BLEND);
-    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glLineWidth (3.0);
+    glEnable(GL_LINE_SMOOTH);
+    glLineWidth(3.0);
 }
 
 void Image::resizeGL(int w, int h) {
@@ -282,10 +286,19 @@ void Image::mouseMoveEvent(QMouseEvent *event) {
         this->z_angle() -= (std::get<0>(this->old_mouse_pos()) - event->x());
         this->x_angle() += (std::get<1>(this->old_mouse_pos()) - event->y());
         this->old_mouse_pos() = std::make_tuple(event->x(), event->y());
+
+        if (!this->draw_timer().isActive()) {
+            this->updateGL();
+        }
     }
 }
 
 void Image::wheelEvent(QWheelEvent* event) {
     this->threashold() += event->delta() > 0 ? 0.05 :
             this->threashold() >= 0.05 ? -0.05 : 0.0;
+
+    if (!this->draw_timer().isActive()) {
+        this->update_gl_buffer();
+        this->updateGL();
+    }
 }
