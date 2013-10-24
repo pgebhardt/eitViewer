@@ -221,9 +221,6 @@ void MainWindow::on_actionCalibrate_triggered() {
         this->solver()->eit_solver()->calculation()[i]->copy(
             this->measurement_system()->measurement_buffer()[i], nullptr);
     }
-
-    emit this->measurement_system()->data_ready(
-        &this->measurement_system()->measurement_buffer());
 }
 
 void MainWindow::on_actionAuto_Calibrate_toggled(bool arg1) {
