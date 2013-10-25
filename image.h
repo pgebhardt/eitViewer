@@ -36,6 +36,8 @@ public:
     Eigen::ArrayXXf& data() { return this->data_; }
     Eigen::ArrayXXf& vertices() { return this->vertices_; }
     Eigen::ArrayXXf& colors() { return this->colors_; }
+    Eigen::ArrayXXf& electrodes() { return this->electrodes_; }
+    Eigen::ArrayXXf& electrode_colors() { return this->electrode_colors_; }
     Eigen::ArrayXf& z_values() { return this->z_values_; }
     Eigen::ArrayXf& node_area() { return this->node_area_; }
     Eigen::ArrayXf& element_area() { return this->element_area_; }
@@ -51,6 +53,8 @@ private:
     Eigen::ArrayXXf data_;
     Eigen::ArrayXXf vertices_;
     Eigen::ArrayXXf colors_;
+    Eigen::ArrayXXf electrodes_;
+    Eigen::ArrayXXf electrode_colors_;
     Eigen::ArrayXf z_values_;
     Eigen::ArrayXf node_area_;
     Eigen::ArrayXf element_area_;

@@ -25,11 +25,13 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
 
     // create arrays
     this->data() = Eigen::ArrayXXf::Zero(rows, columns);
-    this->vertices() = Eigen::ArrayXXf::Zero(3 * 3, this->model()->mesh()->elements()->rows());
-    this->colors() = Eigen::ArrayXXf::Zero(3 * 3, this->model()->mesh()->elements()->rows());
-    this->z_values() = Eigen::ArrayXf::Zero(this->model()->mesh()->nodes()->rows());
-    this->element_area() = Eigen::ArrayXf::Zero(this->model()->mesh()->elements()->rows());
-    this->node_area() = Eigen::ArrayXf::Zero(this->model()->mesh()->nodes()->rows());
+    this->vertices() = Eigen::ArrayXXf::Zero(3 * 3, model->mesh()->elements()->rows());
+    this->colors() = Eigen::ArrayXXf::Zero(3 * 3, model->mesh()->elements()->rows());
+    this->electrodes() = Eigen::ArrayXXf::Zero(2 * 2, model->electrodes()->count());
+    this->electrode_colors() = Eigen::ArrayXXf::Zero(3 * 2, model->electrodes()->count());
+    this->z_values() = Eigen::ArrayXf::Zero(model->mesh()->nodes()->rows());
+    this->element_area() = Eigen::ArrayXf::Zero(model->mesh()->elements()->rows());
+    this->node_area() = Eigen::ArrayXf::Zero(model->mesh()->nodes()->rows());
 
     // calc node and element area
     for (mpFlow::dtype::index element = 0; element < model->mesh()->elements()->rows(); ++element) {
@@ -64,6 +66,21 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
                 std::get<1>(std::get<1>(nodes[node])) / model->mesh()->radius();
         }
     }
+
+    // fill electrodes buffer
+    for (mpFlow::dtype::index electrode = 0; electrode < model->electrodes()->count(); ++electrode) {
+        this->electrodes()(0 * 2 + 0, electrode) = std::get<0>(std::get<0>(
+            model->electrodes()->coordinates(electrode))) / model->mesh()->radius();
+        this->electrodes()(0 * 2 + 1, electrode) = std::get<1>(std::get<0>(
+            model->electrodes()->coordinates(electrode))) / model->mesh()->radius();
+        this->electrodes()(1 * 2 + 0, electrode) = std::get<0>(std::get<1>(
+            model->electrodes()->coordinates(electrode))) / model->mesh()->radius();
+        this->electrodes()(1 * 2 + 1, electrode) = std::get<1>(std::get<1>(
+            model->electrodes()->coordinates(electrode))) / model->mesh()->radius();
+    }
+
+    // mark first electrode red
+    this->electrode_colors()(0, 0) = this->electrode_colors()(3, 0) = 1.0;
 
     // redraw
     this->update_gl_buffer();
@@ -182,45 +199,23 @@ void Image::paintGL() {
     // clear
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // check for beeing initialized
-    if (!this->model()) {
-        return;
-    }
-
     // activate and specify pointer to vertex array
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
 
-    // set pointer
+    // draw mesh
     glVertexPointer(3, GL_FLOAT, 0, this->vertices().data());
     glColorPointer(3, GL_FLOAT, 0, this->colors().data());
+    glDrawArrays(GL_TRIANGLES, 0, this->vertices().cols() * 3);
 
-    // draw elements
-    glDrawArrays(GL_TRIANGLES, 0, this->model()->mesh()->elements()->rows() * 3);
+    // draw electrodes
+    glVertexPointer(2, GL_FLOAT, 0, this->electrodes().data());
+    glColorPointer(3, GL_FLOAT, 0, this->electrode_colors().data());
+    glDrawArrays(GL_LINES, 0, this->electrodes().cols() * 2);
 
     // dactivate vertex arrays after drawing
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
-
-    // draw electrodes
-    glBegin(GL_LINES);
-
-    // first electrode will be marked red
-    glColor3f(1.0, 0.0, 0.0);
-    glVertex2f(std::get<0>(std::get<0>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius(),
-               std::get<1>(std::get<0>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius());
-    glVertex2f(std::get<0>(std::get<1>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius(),
-               std::get<1>(std::get<1>(this->model()->electrodes()->coordinates(0))) / this->model()->mesh()->radius());
-
-    glLineWidth(5.0);
-    glColor3f(0.0, 0.0, 0.0);
-    for (mpFlow::dtype::index electrode = 1; electrode < this->model()->electrodes()->count(); ++electrode) {
-        glVertex2f(std::get<0>(std::get<0>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius(),
-                   std::get<1>(std::get<0>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius());
-        glVertex2f(std::get<0>(std::get<1>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius(),
-                   std::get<1>(std::get<1>(this->model()->electrodes()->coordinates(electrode))) / this->model()->mesh()->radius());
-    }
-    glEnd();
 }
 
 void Image::mousePressEvent(QMouseEvent* event) {
