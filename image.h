@@ -32,17 +32,14 @@ protected:
 
 public:
     // accessors
-    std::shared_ptr<mpFlow::EIT::model::Base> model() {
-        return this->model_;
-    }
+    std::shared_ptr<mpFlow::EIT::model::Base> model() { return this->model_; }
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data() { return this->data_; }
-    std::vector<mpFlow::dtype::real>& red() { return this->red_; }
-    std::vector<mpFlow::dtype::real>& green() { return this->green_; }
-    std::vector<mpFlow::dtype::real>& blue() { return this->blue_; }
-    std::vector<mpFlow::dtype::real>& node_area() { return this->node_area_; }
-    std::vector<mpFlow::dtype::real>& element_area() { return this->element_area_; }
-    mpFlow::dtype::real& x_angle() { return this->x_angle_; }
-    mpFlow::dtype::real& z_angle() { return this->z_angle_; }
+    Eigen::ArrayXXf& colors() { return this->colors_; }
+    Eigen::ArrayXf& node_area() { return this->node_area_; }
+    Eigen::ArrayXf& element_area() { return this->element_area_; }
+    GLfloat* gl_vertices() { return this->gl_vertices_; }
+    GLfloat* gl_colors() { return this->gl_colors_; }
+    std::array<mpFlow::dtype::real, 2>& view_angle() { return this->view_angle_; }
     std::tuple<int, int>& old_mouse_pos() { return this->old_mouse_pos_; }
     mpFlow::dtype::real& threashold() { return this->threashold_; }
     QTimer& draw_timer() { return *this->draw_timer_; }
@@ -52,15 +49,12 @@ public:
 private:
     std::shared_ptr<mpFlow::EIT::model::Base> model_;
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data_;
-    GLfloat* vertices_;
-    GLfloat* colors_;
-    std::vector<mpFlow::dtype::real> red_;
-    std::vector<mpFlow::dtype::real> green_;
-    std::vector<mpFlow::dtype::real> blue_;
-    std::vector<mpFlow::dtype::real> node_area_;
-    std::vector<mpFlow::dtype::real> element_area_;
-    mpFlow::dtype::real x_angle_;
-    mpFlow::dtype::real z_angle_;
+    Eigen::ArrayXXf colors_;
+    Eigen::ArrayXf node_area_;
+    Eigen::ArrayXf element_area_;
+    GLfloat* gl_vertices_;
+    GLfloat* gl_colors_;
+    std::array<mpFlow::dtype::real, 2> view_angle_;
     std::tuple<int, int> old_mouse_pos_;
     mpFlow::dtype::real threashold_;
     QTimer* draw_timer_;

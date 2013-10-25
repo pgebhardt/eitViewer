@@ -3,26 +3,27 @@
 #include "image.h"
 
 void jet(const std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values, mpFlow::dtype::real norm,
-    std::vector<mpFlow::dtype::real>* red, std::vector<mpFlow::dtype::real>* green,
-    std::vector<mpFlow::dtype::real>* blue, int pos) {
+    Eigen::Ref<Eigen::ArrayXXf> colors, int pos) {
     // calc colors
     for (mpFlow::dtype::index element = 0; element < values->rows(); ++element) {
-        (*red)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm - 0.5) + 1.5,
+        colors(element, 0) = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm - 0.5) + 1.5,
                                             0.0), 1.0);
-        (*green)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm - 0.0) + 1.5,
+        colors(element, 1) = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm - 0.0) + 1.5,
                                             0.0), 1.0);
-        (*blue)[element] = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm + 0.5) + 1.5,
+        colors(element, 2) = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm + 0.5) + 1.5,
                                              0.0), 1.0);
     }
 }
 
 Image::Image(QWidget* parent) :
-    QGLWidget(parent), model_(nullptr), data_(nullptr), vertices_(nullptr), colors_(nullptr),
-    red_(0), green_(0), blue_(0), node_area_(0), element_area_(0), x_angle_(0.0),
-    z_angle_(0.0), threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
+    QGLWidget(parent), model_(nullptr), data_(nullptr), gl_vertices_(nullptr),
+    gl_colors_(nullptr), threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
     // create timer
     this->draw_timer_ = new QTimer(this);
     connect(this->draw_timer_, &QTimer::timeout, this, &Image::update_gl_buffer);
+
+    // init view
+    this->reset_view();
 }
 
 Image::~Image() {
@@ -37,26 +38,24 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
     this->model_ = model;
     this->data_ = std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(rows, columns, nullptr);
 
-    // create vectors
-    this->red_ = std::vector<mpFlow::dtype::real>(this->model()->mesh()->elements()->rows(), 1.0);
-    this->green_ = std::vector<mpFlow::dtype::real>(this->model()->mesh()->elements()->rows(), 1.0);
-    this->blue_ = std::vector<mpFlow::dtype::real>(this->model()->mesh()->elements()->rows(), 1.0);
-    this->node_area_ = std::vector<mpFlow::dtype::real>(this->model()->mesh()->nodes()->rows(), 0.0);
-    this->element_area_ = std::vector<mpFlow::dtype::real>(this->model()->mesh()->elements()->rows(), 0.0);
+    // create arrays
+    this->colors() = Eigen::ArrayXXf::Zero(this->model()->mesh()->elements()->rows(), 3);
+    this->element_area() = Eigen::ArrayXf::Zero(this->model()->mesh()->elements()->rows());
+    this->node_area() = Eigen::ArrayXf::Zero(this->model()->mesh()->nodes()->rows());
 
     // create OpenGL buffer
-    this->vertices_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 3];
-    this->colors_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 4];
+    this->gl_vertices_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 3];
+    this->gl_colors_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 4];
 
     // init buffer
-    std::fill_n(this->vertices_, model->mesh()->elements()->rows() * 3 * 3, 0.0);
-    std::fill_n(this->colors_, model->mesh()->elements()->rows() * 3 * 4, 1.0);
+    std::fill_n(this->gl_vertices_, model->mesh()->elements()->rows() * 3 * 3, 0.0);
+    std::fill_n(this->gl_colors_, model->mesh()->elements()->rows() * 3 * 4, 1.0);
 
     // calc node and element area
     for (mpFlow::dtype::index element = 0; element < model->mesh()->elements()->rows(); ++element) {
         auto points = model->mesh()->elementNodes(element);
 
-        this->element_area()[element] = 0.5 * std::abs(
+        this->element_area()(element) = 0.5 * std::abs(
             (std::get<0>(std::get<1>(points[1])) - std::get<0>(std::get<1>(points[0]))) *
             (std::get<1>(std::get<1>(points[2])) - std::get<1>(std::get<1>(points[0]))) -
             (std::get<0>(std::get<1>(points[2])) - std::get<0>(std::get<1>(points[0]))) *
@@ -64,7 +63,7 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
             );
 
         for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-            this->node_area()[std::get<0>(points[node])] += 0.5 * std::abs(
+            this->node_area()(std::get<0>(points[node])) += 0.5 * std::abs(
                 (std::get<0>(std::get<1>(points[1])) - std::get<0>(std::get<1>(points[0]))) *
                 (std::get<1>(std::get<1>(points[2])) - std::get<1>(std::get<1>(points[0]))) -
                 (std::get<0>(std::get<1>(points[2])) - std::get<0>(std::get<1>(points[0]))) *
@@ -79,9 +78,9 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
         auto nodes = model->mesh()->elementNodes(element);
 
         for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-            this->vertices_[element * 3 * 3 + node * 3 + 0] =
+            this->gl_vertices()[element * 3 * 3 + node * 3 + 0] =
                 std::get<0>(std::get<1>(nodes[node])) / model->mesh()->radius();
-            this->vertices_[element * 3 * 3 + node * 3 + 1] =
+            this->gl_vertices()[element * 3 * 3 + node * 3 + 1] =
                 std::get<1>(std::get<1>(nodes[node])) / model->mesh()->radius();
         }
     }
@@ -103,13 +102,13 @@ void Image::cleanup() {
     this->image_increment() = 0.0;
 
     // clear opneGL buffer
-    if (this->vertices_) {
-        delete [] this->vertices_;
-        this->vertices_ = nullptr;
+    if (this->gl_vertices()) {
+        delete [] this->gl_vertices_;
+        this->gl_vertices_ = nullptr;
     }
-    if (this->colors_) {
-        delete [] this->colors_;
-        this->colors_ = nullptr;
+    if (this->gl_colors()) {
+        delete [] this->gl_colors_;
+        this->gl_colors_ = nullptr;
     }
 
     // redraw
@@ -117,8 +116,8 @@ void Image::cleanup() {
 }
 
 void Image::reset_view() {
-    this->x_angle() = 0.0;
-    this->z_angle() = 0.0;
+    this->view_angle()[0] = 0.0;
+    this->view_angle()[1] = 0.0;
     this->threashold() = 0.1;
 }
 
@@ -158,27 +157,27 @@ void Image::update_gl_buffer() {
     norm = norm == 0.0 ? 1.0 : norm;
 
     // calc colors
-    jet(this->data(), norm, &this->red(), &this->green(), &this->blue(), pos);
+    jet(this->data(), norm, this->colors(), pos);
 
     // set colors
     for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
         // set red
-        this->colors_[element * 3 * 4 + 0 * 4 + 0] =
-        this->colors_[element * 3 * 4 + 1 * 4 + 0] =
-        this->colors_[element * 3 * 4 + 2 * 4 + 0] =
-            this->red()[element];
+        this->gl_colors()[element * 3 * 4 + 0 * 4 + 0] =
+        this->gl_colors()[element * 3 * 4 + 1 * 4 + 0] =
+        this->gl_colors()[element * 3 * 4 + 2 * 4 + 0] =
+            this->colors()(element, 0);
 
         // set green
-        this->colors_[element * 3 * 4 + 0 * 4 + 1] =
-        this->colors_[element * 3 * 4 + 1 * 4 + 1] =
-        this->colors_[element * 3 * 4 + 2 * 4 + 1] =
-            this->green()[element];
+        this->gl_colors()[element * 3 * 4 + 0 * 4 + 1] =
+        this->gl_colors()[element * 3 * 4 + 1 * 4 + 1] =
+        this->gl_colors()[element * 3 * 4 + 2 * 4 + 1] =
+            this->colors()(element, 1);
 
         // set blue
-        this->colors_[element * 3 * 4 + 0 * 4 + 2] =
-        this->colors_[element * 3 * 4 + 1 * 4 + 2] =
-        this->colors_[element * 3 * 4 + 2 * 4 + 2] =
-            this->blue()[element];
+        this->gl_colors()[element * 3 * 4 + 0 * 4 + 2] =
+        this->gl_colors()[element * 3 * 4 + 1 * 4 + 2] =
+        this->gl_colors()[element * 3 * 4 + 2 * 4 + 2] =
+            this->colors()(element, 2);
     }
 
     // calc z_values
@@ -193,7 +192,7 @@ void Image::update_gl_buffer() {
     // fill vertex buffer
     for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
         for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-            this->vertices_[element * 3 * 3 + node * 3 + 2] =
+            this->gl_vertices()[element * 3 * 3 + node * 3 + 2] =
                 -z_values[(*this->model()->mesh()->elements())(element, node)] /
                     (this->node_area()[(*this->model()->mesh()->elements())(element, node)] * norm);
         }
@@ -228,14 +227,14 @@ void Image::resizeGL(int w, int h) {
 void Image::paintGL() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glRotatef(this->x_angle(), 1.0, 0.0, 0.0);
-    glRotatef(this->z_angle(), 0.0, 0.0, 1.0);
+    glRotatef(this->view_angle()[0], 1.0, 0.0, 0.0);
+    glRotatef(this->view_angle()[1], 0.0, 0.0, 1.0);
 
     // clear
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // check for beeing initialized
-    if ((!this->vertices_) || (!this->colors_) || (!this->model())) {
+    if ((!this->gl_vertices()) || (!this->gl_colors()) || (!this->model())) {
         return;
     }
 
@@ -244,8 +243,8 @@ void Image::paintGL() {
     glEnableClientState(GL_COLOR_ARRAY);
 
     // set pointer
-    glVertexPointer(3, GL_FLOAT, 0, this->vertices_);
-    glColorPointer(4, GL_FLOAT, 0, this->colors_);
+    glVertexPointer(3, GL_FLOAT, 0, this->gl_vertices());
+    glColorPointer(4, GL_FLOAT, 0, this->gl_colors());
 
     // draw elements
     glDrawArrays(GL_TRIANGLES, 0, this->model()->mesh()->elements()->rows() * 3);
@@ -283,8 +282,8 @@ void Image::mousePressEvent(QMouseEvent* event) {
 
 void Image::mouseMoveEvent(QMouseEvent *event) {
     if (event->buttons() == Qt::LeftButton) {
-        this->z_angle() -= (std::get<0>(this->old_mouse_pos()) - event->x());
-        this->x_angle() += (std::get<1>(this->old_mouse_pos()) - event->y());
+        this->view_angle()[1] -= (std::get<0>(this->old_mouse_pos()) - event->x());
+        this->view_angle()[0] += (std::get<1>(this->old_mouse_pos()) - event->y());
         this->old_mouse_pos() = std::make_tuple(event->x(), event->y());
 
         if (!this->draw_timer().isActive()) {
