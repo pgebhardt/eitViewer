@@ -33,11 +33,11 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
 
     // create OpenGL buffer
     this->gl_vertices_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 3];
-    this->gl_colors_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 4];
+    this->gl_colors_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 3];
 
     // init buffer
     std::fill_n(this->gl_vertices_, model->mesh()->elements()->rows() * 3 * 3, 0.0);
-    std::fill_n(this->gl_colors_, model->mesh()->elements()->rows() * 3 * 4, 1.0);
+    std::fill_n(this->gl_colors_, model->mesh()->elements()->rows() * 3 * 3, 1.0);
 
     // calc node and element area
     for (mpFlow::dtype::index element = 0; element < model->mesh()->elements()->rows(); ++element) {
@@ -158,21 +158,21 @@ void Image::update_gl_buffer() {
     // copy color data to opengl color buffer
     for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
         // set red
-        this->gl_colors()[element * 3 * 4 + 0 * 4 + 0] =
-        this->gl_colors()[element * 3 * 4 + 1 * 4 + 0] =
-        this->gl_colors()[element * 3 * 4 + 2 * 4 + 0] =
+        this->gl_colors()[element * 3 * 3 + 0 * 3 + 0] =
+        this->gl_colors()[element * 3 * 3 + 1 * 3 + 0] =
+        this->gl_colors()[element * 3 * 3 + 2 * 3 + 0] =
             this->colors()(element, 0);
 
         // set green
-        this->gl_colors()[element * 3 * 4 + 0 * 4 + 1] =
-        this->gl_colors()[element * 3 * 4 + 1 * 4 + 1] =
-        this->gl_colors()[element * 3 * 4 + 2 * 4 + 1] =
+        this->gl_colors()[element * 3 * 3 + 0 * 3 + 1] =
+        this->gl_colors()[element * 3 * 3 + 1 * 3 + 1] =
+        this->gl_colors()[element * 3 * 3 + 2 * 3 + 1] =
             this->colors()(element, 1);
 
         // set blue
-        this->gl_colors()[element * 3 * 4 + 0 * 4 + 2] =
-        this->gl_colors()[element * 3 * 4 + 1 * 4 + 2] =
-        this->gl_colors()[element * 3 * 4 + 2 * 4 + 2] =
+        this->gl_colors()[element * 3 * 3 + 0 * 3 + 2] =
+        this->gl_colors()[element * 3 * 3 + 1 * 3 + 2] =
+        this->gl_colors()[element * 3 * 3 + 2 * 3 + 2] =
             this->colors()(element, 2);
     }
 
@@ -229,7 +229,7 @@ void Image::paintGL() {
 
     // set pointer
     glVertexPointer(3, GL_FLOAT, 0, this->gl_vertices());
-    glColorPointer(4, GL_FLOAT, 0, this->gl_colors());
+    glColorPointer(3, GL_FLOAT, 0, this->gl_colors());
 
     // draw elements
     glDrawArrays(GL_TRIANGLES, 0, this->model()->mesh()->elements()->rows() * 3);
