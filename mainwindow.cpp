@@ -55,42 +55,34 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::initTable() {
-    this->addAnalysis("system fps:", "", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
+    this->addAnalysis("system fps:", "", [=](const Eigen::Ref<Eigen::ArrayXXf>&) {
         return 1e3 / (20.0 / this->ui->image->image_increment());
     });
-    this->addAnalysis("latency:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
+    this->addAnalysis("latency:", "ms", [=](const Eigen::Ref<Eigen::ArrayXXf>&) {
         return 20.0 / this->ui->image->image_increment() * this->solver()->eit_solver()->measurement().size() + this->solver()->solve_time() * 1e3;
     });
-    this->addAnalysis("solve time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
+    this->addAnalysis("solve time:", "ms", [=](const Eigen::Ref<Eigen::ArrayXXf>&) {
         return this->solver()->solve_time() * 1e3;
     });
     if (this->hasMultiGPU()) {
-        this->addAnalysis("calibrate time:", "ms", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
+        this->addAnalysis("calibrate time:", "ms", [=](const Eigen::Ref<Eigen::ArrayXXf>&) {
             return this->calibrator()->solve_time() * 1e3;
         });
     }
-    this->addAnalysis("normalization threashold:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>) {
+    this->addAnalysis("normalization threashold:", "dB", [=](const Eigen::Ref<Eigen::ArrayXXf>&) {
         return this->ui->image->threashold();
     });
-    this->addAnalysis("min:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
-        mpFlow::dtype::real result = 0.0;
-        for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
-            result = std::min((*values)(i, this->ui->image->image_pos()), result);
-        }
-        return result;
+    this->addAnalysis("min:", "dB", [=](const Eigen::Ref<Eigen::ArrayXXf>& values) {
+        return values.col(this->ui->image->image_pos()).minCoeff();
     });
-    this->addAnalysis("max:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
-        mpFlow::dtype::real result = 0.0;
-        for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
-            result = std::max((*values)(i, this->ui->image->image_pos()), result);
-        }
-        return result;
+    this->addAnalysis("max:", "dB", [=](const Eigen::Ref<Eigen::ArrayXXf>& values) {
+        return values.col(this->ui->image->image_pos()).maxCoeff();
     });
-    this->addAnalysis("rms:", "dB", [=](std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values) -> mpFlow::dtype::real {
+    this->addAnalysis("rms:", "dB", [=](const Eigen::Ref<Eigen::ArrayXXf>& values) {
         mpFlow::dtype::real rms = 0.0;
         mpFlow::dtype::real area = 0.0;
-        for (mpFlow::dtype::index i = 0; i < values->rows(); ++i) {
-            rms += mpFlow::math::square((*values)(i, this->ui->image->image_pos())) * this->ui->image->element_area()[i];
+        for (mpFlow::dtype::index i = 0; i < values.rows(); ++i) {
+            rms += mpFlow::math::square(values(i, this->ui->image->image_pos())) * this->ui->image->element_area()[i];
             area += this->ui->image->element_area()[i];
         }
         return std::sqrt(rms / area);
@@ -98,7 +90,7 @@ void MainWindow::initTable() {
 }
 
 void MainWindow::addAnalysis(QString name, QString unit,
-    std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)> analysis) {
+    std::function<mpFlow::dtype::real(const Eigen::Ref<Eigen::ArrayXXf>&)> analysis) {
     // create new table row and table items
     this->ui->analysis_table->insertRow(this->ui->analysis_table->rowCount());
     this->ui->analysis_table->setItem(this->ui->analysis_table->rowCount() - 1, 0,

@@ -45,7 +45,7 @@ protected:
     void initTable();
     bool hasMultiGPU() { int devCount = 0; cudaGetDeviceCount(&devCount); return devCount > 1; }
     void addAnalysis(QString name, QString unit, std::function<mpFlow::dtype::real(
-        std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)> analysis);
+        const Eigen::Ref<Eigen::ArrayXXf>&)> analysis);
 
 public:
     // accessor
@@ -54,7 +54,7 @@ public:
     Calibrator* calibrator() { return this->calibrator_; }
     DataLogger* datalogger() { return this->datalogger_; }
     std::vector<std::tuple<int, QString,
-        std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>&
+        std::function<mpFlow::dtype::real(const Eigen::Ref<Eigen::ArrayXXf>&)>>>&
         analysis() { return this->analysis_; }
     QString& open_file_name() { return this->open_file_name_; }
 
@@ -65,7 +65,7 @@ private:
     Calibrator* calibrator_;
     DataLogger* datalogger_;
     std::vector<std::tuple<int, QString,
-        std::function<mpFlow::dtype::real(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>)>>>
+        std::function<mpFlow::dtype::real(const Eigen::Ref<Eigen::ArrayXXf>&)>>>
         analysis_;
     QTimer* analysis_timer_;
     QString open_file_name_;
