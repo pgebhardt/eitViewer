@@ -2,14 +2,6 @@
 #include <cmath>
 #include "image.h"
 
-void jet(const Eigen::Ref<Eigen::ArrayXXf>& values, mpFlow::dtype::real norm,
-    Eigen::Ref<Eigen::ArrayXXf> colors, int pos) {
-    // calc colors
-    colors.col(0) = (-2.0 * (values.col(pos) / norm - 0.5).abs() + 1.5).max(0.0).min(1.0);
-    colors.col(1) = (-2.0 * (values.col(pos) / norm - 0.0).abs() + 1.5).max(0.0).min(1.0);
-    colors.col(2) = (-2.0 * (values.col(pos) / norm + 0.5).abs() + 1.5).max(0.0).min(1.0);
-}
-
 Image::Image(QWidget* parent) :
     QGLWidget(parent), model_(nullptr), gl_vertices_(nullptr), gl_colors_(nullptr),
     threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
@@ -35,6 +27,7 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
     // create arrays
     this->data() = Eigen::ArrayXXf::Zero(rows, columns);
     this->colors() = Eigen::ArrayXXf::Zero(this->model()->mesh()->elements()->rows(), 3);
+    this->z_values() = Eigen::ArrayXf::Zero(this->model()->mesh()->nodes()->rows());
     this->element_area() = Eigen::ArrayXf::Zero(this->model()->mesh()->elements()->rows());
     this->node_area() = Eigen::ArrayXf::Zero(this->model()->mesh()->nodes()->rows());
 
@@ -146,9 +139,23 @@ void Image::update_gl_buffer() {
     norm = norm == 0.0 ? 1.0 : norm;
 
     // calc colors
-    jet(this->data(), norm, this->colors(), pos);
+    this->colors().col(0) = (-2.0 * (this->data().col(pos) / norm - 0.5).abs() + 1.5)
+        .max(0.0).min(1.0);
+    this->colors().col(1) = (-2.0 * (this->data().col(pos) / norm - 0.0).abs() + 1.5)
+        .max(0.0).min(1.0);
+    this->colors().col(2) = (-2.0 * (this->data().col(pos) / norm + 0.5).abs() + 1.5)
+        .max(0.0).min(1.0);
 
-    // set colors
+    // calc z values
+    this->z_values().setZero();
+    for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element)
+    for (mpFlow::dtype::index node = 0; node < 3; ++node) {
+        this->z_values()((*this->model()->mesh()->elements())(element, node)) -=
+            this->data()(element, pos) * this->element_area()(element) /
+                (this->node_area()((*this->model()->mesh()->elements())(element, node)) * norm);
+    }
+
+    // copy color data to opengl color buffer
     for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
         // set red
         this->gl_colors()[element * 3 * 4 + 0 * 4 + 0] =
@@ -169,22 +176,11 @@ void Image::update_gl_buffer() {
             this->colors()(element, 2);
     }
 
-    // calc z_values
-    std::vector<mpFlow::dtype::real> z_values(this->model()->mesh()->nodes()->rows());
-    for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
-        for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-            z_values[(*this->model()->mesh()->elements())(element, node)] +=
-                this->data()(element, pos) * this->element_area()(element);
-        }
-    }
-
-    // fill vertex buffer
-    for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
-        for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-            this->gl_vertices()[element * 3 * 3 + node * 3 + 2] =
-                -z_values[(*this->model()->mesh()->elements())(element, node)] /
-                    (this->node_area()[(*this->model()->mesh()->elements())(element, node)] * norm);
-        }
+    // copy z values to opengl vertex buffer
+    for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element)
+    for (mpFlow::dtype::index node = 0; node < 3; ++node) {
+        this->gl_vertices()[element * 3 * 3 + node * 3 + 2] =
+            this->z_values()((*this->model()->mesh()->elements())(element, node));
     }
 
     // update image pos

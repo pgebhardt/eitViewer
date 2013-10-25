@@ -35,6 +35,7 @@ public:
     std::shared_ptr<mpFlow::EIT::model::Base> model() { return this->model_; }
     Eigen::ArrayXXf& data() { return this->data_; }
     Eigen::ArrayXXf& colors() { return this->colors_; }
+    Eigen::ArrayXf& z_values() { return this->z_values_; }
     Eigen::ArrayXf& node_area() { return this->node_area_; }
     Eigen::ArrayXf& element_area() { return this->element_area_; }
     GLfloat* gl_vertices() { return this->gl_vertices_; }
@@ -50,6 +51,7 @@ private:
     std::shared_ptr<mpFlow::EIT::model::Base> model_;
     Eigen::ArrayXXf data_;
     Eigen::ArrayXXf colors_;
+    Eigen::ArrayXf z_values_;
     Eigen::ArrayXf node_area_;
     Eigen::ArrayXf element_area_;
     GLfloat* gl_vertices_;
