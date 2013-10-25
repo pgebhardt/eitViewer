@@ -209,9 +209,8 @@ void MainWindow::on_actionSave_Measurement_triggered() {
 
 void MainWindow::on_actionCalibrate_triggered() {
     // set calibration voltage to current measurment voltage
-    for (mpFlow::dtype::index i = 0; i < this->solver()->eit_solver()->calculation().size(); ++i) {
-        this->solver()->eit_solver()->calculation()[i]->copy(
-            this->measurement_system()->measurement_buffer()[i], nullptr);
+    for (auto calculation : this->solver()->eit_solver()->calculation()) {
+        calculation->copy(this->measurement_system()->measurement_buffer()[0], nullptr);
     }
 }
 
