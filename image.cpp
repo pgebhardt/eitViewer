@@ -2,22 +2,22 @@
 #include <cmath>
 #include "image.h"
 
-void jet(const std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> values, mpFlow::dtype::real norm,
+void jet(const Eigen::Ref<Eigen::ArrayXXf>& values, mpFlow::dtype::real norm,
     Eigen::Ref<Eigen::ArrayXXf> colors, int pos) {
     // calc colors
-    for (mpFlow::dtype::index element = 0; element < values->rows(); ++element) {
-        colors(element, 0) = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm - 0.5) + 1.5,
+    for (mpFlow::dtype::index element = 0; element < values.rows(); ++element) {
+        colors(element, 0) = std::min(std::max(-2.0 * std::abs(values(element, pos) / norm - 0.5) + 1.5,
                                             0.0), 1.0);
-        colors(element, 1) = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm - 0.0) + 1.5,
+        colors(element, 1) = std::min(std::max(-2.0 * std::abs(values(element, pos) / norm - 0.0) + 1.5,
                                             0.0), 1.0);
-        colors(element, 2) = std::min(std::max(-2.0 * std::abs((*values)(element, pos) / norm + 0.5) + 1.5,
+        colors(element, 2) = std::min(std::max(-2.0 * std::abs(values(element, pos) / norm + 0.5) + 1.5,
                                              0.0), 1.0);
     }
 }
 
 Image::Image(QWidget* parent) :
-    QGLWidget(parent), model_(nullptr), data_(nullptr), gl_vertices_(nullptr),
-    gl_colors_(nullptr), threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
+    QGLWidget(parent), model_(nullptr), gl_vertices_(nullptr), gl_colors_(nullptr),
+    threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
     // create timer
     this->draw_timer_ = new QTimer(this);
     connect(this->draw_timer_, &QTimer::timeout, this, &Image::update_gl_buffer);
@@ -36,9 +36,9 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
     this->cleanup();
 
     this->model_ = model;
-    this->data_ = std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(rows, columns, nullptr);
 
     // create arrays
+    this->data() = Eigen::ArrayXXf::Zero(rows, columns);
     this->colors() = Eigen::ArrayXXf::Zero(this->model()->mesh()->elements()->rows(), 3);
     this->element_area() = Eigen::ArrayXf::Zero(this->model()->mesh()->elements()->rows());
     this->node_area() = Eigen::ArrayXf::Zero(this->model()->mesh()->nodes()->rows());
@@ -123,14 +123,14 @@ void Image::reset_view() {
 
 void Image::update_data(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data,
     double time_elapsed) {
-    this->data()->copy(data, nullptr);
-    this->data()->copyToHost(nullptr);
+    data->copyToHost(nullptr);
     cudaStreamSynchronize(nullptr);
+    this->data() = mpFlow::numeric::matrix::toEigen<mpFlow::dtype::real>(data);
 
     // update image increments
     this->image_pos() = 0.0;
     this->image_increment() = time_elapsed > 0.02 ? 0.02 / time_elapsed *
-        (double)this->data()->columns() : 0.0;
+        (double)this->data().cols() : 0.0;
 
     // start draw timer
     this->draw_timer().start(20);
@@ -140,15 +140,9 @@ void Image::update_gl_buffer() {
     // get current image pos
     mpFlow::dtype::index pos = (mpFlow::dtype::index)this->image_pos();
 
-    // min and max values
-    mpFlow::dtype::real min_value = 0.0;
-    mpFlow::dtype::real max_value = 0.0;
-
     // calc min and max
-    for (mpFlow::dtype::index element = 0; element < this->data()->rows(); ++element) {
-        min_value = std::min((*this->data())(element, pos), min_value);
-        max_value = std::max((*this->data())(element, pos), max_value);
-    }
+    mpFlow::dtype::real min_value = this->data().col(pos).minCoeff();
+    mpFlow::dtype::real max_value = this->data().col(pos).maxCoeff();
 
     // calc norm
     mpFlow::dtype::real norm = std::max(std::max(-min_value, max_value), this->threashold());
@@ -185,7 +179,7 @@ void Image::update_gl_buffer() {
     for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
         for (mpFlow::dtype::index node = 0; node < 3; ++node) {
             z_values[(*this->model()->mesh()->elements())(element, node)] +=
-                (*this->data())(element, pos) * this->element_area()[element];
+                this->data()(element, pos) * this->element_area()(element);
         }
     }
 
@@ -200,8 +194,8 @@ void Image::update_gl_buffer() {
 
     // update image pos
     this->image_pos() += this->image_increment();
-    if (this->image_pos() >= (double)this->data()->columns()) {
-        this->image_pos() = (double)this->data()->columns() - 1.0;
+    if (this->image_pos() >= (double)this->data().cols()) {
+        this->image_pos() = (double)this->data().cols() - 1.0;
 
         // stop draw timer
         this->draw_timer().stop();
