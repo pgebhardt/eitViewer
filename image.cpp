@@ -3,7 +3,7 @@
 #include "image.h"
 
 Image::Image(QWidget* parent) :
-    QGLWidget(parent), model_(nullptr), threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
+    QGLWidget(parent), threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
     // create timer
     this->draw_timer_ = new QTimer(this);
     connect(this->draw_timer_, &QTimer::timeout, this, &Image::update_gl_buffer);
@@ -21,14 +21,14 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
     // cleanup
     this->cleanup();
 
-    this->model_ = model;
-
     // create arrays
     this->data() = Eigen::ArrayXXf::Zero(rows, columns);
     this->vertices() = Eigen::ArrayXXf::Zero(3 * 3, model->mesh()->elements()->rows());
     this->colors() = Eigen::ArrayXXf::Zero(3 * 3, model->mesh()->elements()->rows());
     this->electrodes() = Eigen::ArrayXXf::Zero(2 * 2, model->electrodes()->count());
     this->electrode_colors() = Eigen::ArrayXXf::Zero(3 * 2, model->electrodes()->count());
+    this->elements() = mpFlow::numeric::matrix::toEigen<mpFlow::dtype::index>(
+        model->mesh()->elements());
     this->z_values() = Eigen::ArrayXf::Zero(model->mesh()->nodes()->rows());
     this->element_area() = Eigen::ArrayXf::Zero(model->mesh()->elements()->rows());
     this->node_area() = Eigen::ArrayXf::Zero(model->mesh()->nodes()->rows());
@@ -98,9 +98,6 @@ void Image::cleanup() {
     this->image_pos() = 0.0;
     this->image_increment() = 0.0;
 
-    // clear model
-    this->model_ = nullptr;
-
     // redraw
     this->updateGL();
 }
@@ -150,18 +147,18 @@ void Image::update_gl_buffer() {
 
     // calc z values
     this->z_values().setZero();
-    for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element)
+    for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
     for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-        this->z_values()((*this->model()->mesh()->elements())(element, node)) -=
+        this->z_values()(this->elements()(element, node)) -=
             this->data()(element, pos) * this->element_area()(element) /
-                (this->node_area()((*this->model()->mesh()->elements())(element, node)) * norm);
+                (this->node_area()(this->elements()(element, node)) * norm);
     }
 
     // copy z values to opengl vertex buffer
-    for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element)
+    for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
     for (mpFlow::dtype::index node = 0; node < 3; ++node) {
         this->vertices()(node * 3 + 2, element) =
-            this->z_values()((*this->model()->mesh()->elements())(element, node));
+            this->z_values()(this->elements()(element, node));
     }
 
     // update image pos
