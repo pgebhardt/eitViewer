@@ -5,14 +5,9 @@
 void jet(const Eigen::Ref<Eigen::ArrayXXf>& values, mpFlow::dtype::real norm,
     Eigen::Ref<Eigen::ArrayXXf> colors, int pos) {
     // calc colors
-    for (mpFlow::dtype::index element = 0; element < values.rows(); ++element) {
-        colors(element, 0) = std::min(std::max(-2.0 * std::abs(values(element, pos) / norm - 0.5) + 1.5,
-                                            0.0), 1.0);
-        colors(element, 1) = std::min(std::max(-2.0 * std::abs(values(element, pos) / norm - 0.0) + 1.5,
-                                            0.0), 1.0);
-        colors(element, 2) = std::min(std::max(-2.0 * std::abs(values(element, pos) / norm + 0.5) + 1.5,
-                                             0.0), 1.0);
-    }
+    colors.col(0) = (-2.0 * (values.col(pos) / norm - 0.5).abs() + 1.5).max(0.0).min(1.0);
+    colors.col(1) = (-2.0 * (values.col(pos) / norm - 0.0).abs() + 1.5).max(0.0).min(1.0);
+    colors.col(2) = (-2.0 * (values.col(pos) / norm + 0.5).abs() + 1.5).max(0.0).min(1.0);
 }
 
 Image::Image(QWidget* parent) :
