@@ -3,8 +3,7 @@
 #include "image.h"
 
 Image::Image(QWidget* parent) :
-    QGLWidget(parent), model_(nullptr), gl_vertices_(nullptr), gl_colors_(nullptr),
-    threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
+    QGLWidget(parent), model_(nullptr), threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
     // create timer
     this->draw_timer_ = new QTimer(this);
     connect(this->draw_timer_, &QTimer::timeout, this, &Image::update_gl_buffer);
@@ -26,18 +25,11 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
 
     // create arrays
     this->data() = Eigen::ArrayXXf::Zero(rows, columns);
-    this->colors() = Eigen::ArrayXXf::Zero(this->model()->mesh()->elements()->rows(), 3);
+    this->vertices() = Eigen::ArrayXXf::Zero(3 * 3, this->model()->mesh()->elements()->rows());
+    this->colors() = Eigen::ArrayXXf::Zero(3 * 3, this->model()->mesh()->elements()->rows());
     this->z_values() = Eigen::ArrayXf::Zero(this->model()->mesh()->nodes()->rows());
     this->element_area() = Eigen::ArrayXf::Zero(this->model()->mesh()->elements()->rows());
     this->node_area() = Eigen::ArrayXf::Zero(this->model()->mesh()->nodes()->rows());
-
-    // create OpenGL buffer
-    this->gl_vertices_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 3];
-    this->gl_colors_ = new GLfloat[model->mesh()->elements()->rows() * 3 * 3];
-
-    // init buffer
-    std::fill_n(this->gl_vertices_, model->mesh()->elements()->rows() * 3 * 3, 0.0);
-    std::fill_n(this->gl_colors_, model->mesh()->elements()->rows() * 3 * 3, 1.0);
 
     // calc node and element area
     for (mpFlow::dtype::index element = 0; element < model->mesh()->elements()->rows(); ++element) {
@@ -66,9 +58,9 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
         auto nodes = model->mesh()->elementNodes(element);
 
         for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-            this->gl_vertices()[element * 3 * 3 + node * 3 + 0] =
+            this->vertices()(node * 3 + 0, element) =
                 std::get<0>(std::get<1>(nodes[node])) / model->mesh()->radius();
-            this->gl_vertices()[element * 3 * 3 + node * 3 + 1] =
+            this->vertices()(node * 3 + 1, element) =
                 std::get<1>(std::get<1>(nodes[node])) / model->mesh()->radius();
         }
     }
@@ -89,15 +81,8 @@ void Image::cleanup() {
     this->image_pos() = 0.0;
     this->image_increment() = 0.0;
 
-    // clear opneGL buffer
-    if (this->gl_vertices()) {
-        delete [] this->gl_vertices_;
-        this->gl_vertices_ = nullptr;
-    }
-    if (this->gl_colors()) {
-        delete [] this->gl_colors_;
-        this->gl_colors_ = nullptr;
-    }
+    // clear model
+    this->model_ = nullptr;
 
     // redraw
     this->updateGL();
@@ -139,12 +124,12 @@ void Image::update_gl_buffer() {
     norm = norm == 0.0 ? 1.0 : norm;
 
     // calc colors
-    this->colors().col(0) = (-2.0 * (this->data().col(pos) / norm - 0.5).abs() + 1.5)
-        .max(0.0).min(1.0);
-    this->colors().col(1) = (-2.0 * (this->data().col(pos) / norm - 0.0).abs() + 1.5)
-        .max(0.0).min(1.0);
-    this->colors().col(2) = (-2.0 * (this->data().col(pos) / norm + 0.5).abs() + 1.5)
-        .max(0.0).min(1.0);
+    this->colors().row(0) = this->colors().row(3) = this->colors().row(6) =
+        (-2.0 * (this->data().col(pos) / norm - 0.5).abs() + 1.5).max(0.0).min(1.0);
+    this->colors().row(1) = this->colors().row(4) = this->colors().row(7) =
+        (-2.0 * (this->data().col(pos) / norm - 0.0).abs() + 1.5).max(0.0).min(1.0);
+    this->colors().row(2) = this->colors().row(5) = this->colors().row(8) =
+        (-2.0 * (this->data().col(pos) / norm + 0.5).abs() + 1.5).max(0.0).min(1.0);
 
     // calc z values
     this->z_values().setZero();
@@ -155,31 +140,10 @@ void Image::update_gl_buffer() {
                 (this->node_area()((*this->model()->mesh()->elements())(element, node)) * norm);
     }
 
-    // copy color data to opengl color buffer
-    for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element) {
-        // set red
-        this->gl_colors()[element * 3 * 3 + 0 * 3 + 0] =
-        this->gl_colors()[element * 3 * 3 + 1 * 3 + 0] =
-        this->gl_colors()[element * 3 * 3 + 2 * 3 + 0] =
-            this->colors()(element, 0);
-
-        // set green
-        this->gl_colors()[element * 3 * 3 + 0 * 3 + 1] =
-        this->gl_colors()[element * 3 * 3 + 1 * 3 + 1] =
-        this->gl_colors()[element * 3 * 3 + 2 * 3 + 1] =
-            this->colors()(element, 1);
-
-        // set blue
-        this->gl_colors()[element * 3 * 3 + 0 * 3 + 2] =
-        this->gl_colors()[element * 3 * 3 + 1 * 3 + 2] =
-        this->gl_colors()[element * 3 * 3 + 2 * 3 + 2] =
-            this->colors()(element, 2);
-    }
-
     // copy z values to opengl vertex buffer
     for (mpFlow::dtype::index element = 0; element < this->model()->mesh()->elements()->rows(); ++element)
     for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-        this->gl_vertices()[element * 3 * 3 + node * 3 + 2] =
+        this->vertices()(node * 3 + 2, element) =
             this->z_values()((*this->model()->mesh()->elements())(element, node));
     }
 
@@ -219,7 +183,7 @@ void Image::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // check for beeing initialized
-    if ((!this->gl_vertices()) || (!this->gl_colors()) || (!this->model())) {
+    if (!this->model()) {
         return;
     }
 
@@ -228,8 +192,8 @@ void Image::paintGL() {
     glEnableClientState(GL_COLOR_ARRAY);
 
     // set pointer
-    glVertexPointer(3, GL_FLOAT, 0, this->gl_vertices());
-    glColorPointer(3, GL_FLOAT, 0, this->gl_colors());
+    glVertexPointer(3, GL_FLOAT, 0, this->vertices().data());
+    glColorPointer(3, GL_FLOAT, 0, this->colors().data());
 
     // draw elements
     glDrawArrays(GL_TRIANGLES, 0, this->model()->mesh()->elements()->rows() * 3);

@@ -34,12 +34,11 @@ public:
     // accessors
     std::shared_ptr<mpFlow::EIT::model::Base> model() { return this->model_; }
     Eigen::ArrayXXf& data() { return this->data_; }
+    Eigen::ArrayXXf& vertices() { return this->vertices_; }
     Eigen::ArrayXXf& colors() { return this->colors_; }
     Eigen::ArrayXf& z_values() { return this->z_values_; }
     Eigen::ArrayXf& node_area() { return this->node_area_; }
     Eigen::ArrayXf& element_area() { return this->element_area_; }
-    GLfloat* gl_vertices() { return this->gl_vertices_; }
-    GLfloat* gl_colors() { return this->gl_colors_; }
     std::array<mpFlow::dtype::real, 2>& view_angle() { return this->view_angle_; }
     std::tuple<int, int>& old_mouse_pos() { return this->old_mouse_pos_; }
     mpFlow::dtype::real& threashold() { return this->threashold_; }
@@ -50,12 +49,11 @@ public:
 private:
     std::shared_ptr<mpFlow::EIT::model::Base> model_;
     Eigen::ArrayXXf data_;
+    Eigen::ArrayXXf vertices_;
     Eigen::ArrayXXf colors_;
     Eigen::ArrayXf z_values_;
     Eigen::ArrayXf node_area_;
     Eigen::ArrayXf element_area_;
-    GLfloat* gl_vertices_;
-    GLfloat* gl_colors_;
     std::array<mpFlow::dtype::real, 2> view_angle_;
     std::tuple<int, int> old_mouse_pos_;
     mpFlow::dtype::real threashold_;
