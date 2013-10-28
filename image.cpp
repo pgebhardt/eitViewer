@@ -3,7 +3,8 @@
 #include "image.h"
 
 Image::Image(QWidget* parent) :
-    QGLWidget(parent), threashold_(0.1), image_pos_(0.0), image_increment_(0.0) {
+    QGLWidget(parent), threashold_(0.1), image_pos_(0.0), image_increment_(0.0),
+    sigma_ref_(0.0) {
     // create timer
     this->draw_timer_ = new QTimer(this);
     connect(this->draw_timer_, &QTimer::timeout, this, &Image::update_gl_buffer);
@@ -22,7 +23,7 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
     this->cleanup();
 
     // create arrays
-    this->data() = Eigen::ArrayXXf::Zero(rows, columns);
+    this->data() = Eigen::ArrayXXf::Ones(rows, columns) * model->sigma_ref();
     this->vertices() = Eigen::ArrayXXf::Zero(3 * 3, model->mesh()->elements()->rows());
     this->colors() = Eigen::ArrayXXf::Zero(3 * 3, model->mesh()->elements()->rows());
     this->electrodes() = Eigen::ArrayXXf::Zero(2 * 2, model->electrodes()->count());
@@ -71,6 +72,9 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
     // mark first electrode red
     this->electrode_colors()(0, 0) = this->electrode_colors()(3, 0) = 1.0;
 
+    // save sigma ref
+    this->sigma_ref() = model->sigma_ref();
+
     // redraw
     this->update_gl_buffer();
     this->updateGL();
@@ -94,14 +98,11 @@ void Image::cleanup() {
 void Image::reset_view() {
     this->view_angle()[0] = 0.0;
     this->view_angle()[1] = 0.0;
-    this->threashold() = 0.1;
+    this->threashold() = 0.05;
 }
 
-void Image::update_data(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data,
-    double time_elapsed) {
-    data->copyToHost(nullptr);
-    cudaStreamSynchronize(nullptr);
-    this->data() = mpFlow::numeric::matrix::toEigen<mpFlow::dtype::real>(data);
+void Image::update_data(Eigen::ArrayXXf data, double time_elapsed) {
+    this->data() = data;
 
     // update image increments
     this->image_pos() = 0.0;
@@ -117,30 +118,31 @@ void Image::update_gl_buffer() {
     mpFlow::dtype::index pos = (mpFlow::dtype::index)this->image_pos();
 
     // calc min and max
-    mpFlow::dtype::real min_value = this->data().col(pos).minCoeff();
-    mpFlow::dtype::real max_value = this->data().col(pos).maxCoeff();
+    mpFlow::dtype::real min_value = this->data().col(pos).minCoeff() - this->sigma_ref();
+    mpFlow::dtype::real max_value = this->data().col(pos).maxCoeff() - this->sigma_ref();
 
     // calc norm
-    mpFlow::dtype::real norm = std::max(std::max(-min_value, max_value), this->threashold());
+    mpFlow::dtype::real norm = std::max(std::max(-min_value, max_value),
+        this->threashold() * this->sigma_ref());
 
     // check norm to prevent division by zero
     norm = norm == 0.0 ? 1.0 : norm;
 
     // calc colors
     this->colors().row(0) = this->colors().row(3) = this->colors().row(6) =
-        (-2.0 * (this->data().col(pos) / norm - 0.5).abs() + 1.5).max(0.0).min(1.0);
+        (-2.0 * ((this->data() - this->sigma_ref()).col(pos) / norm - 0.5).abs() + 1.5).max(0.0).min(1.0);
     this->colors().row(1) = this->colors().row(4) = this->colors().row(7) =
-        (-2.0 * (this->data().col(pos) / norm - 0.0).abs() + 1.5).max(0.0).min(1.0);
+        (-2.0 * ((this->data() - this->sigma_ref()).col(pos) / norm - 0.0).abs() + 1.5).max(0.0).min(1.0);
     this->colors().row(2) = this->colors().row(5) = this->colors().row(8) =
-        (-2.0 * (this->data().col(pos) / norm + 0.5).abs() + 1.5).max(0.0).min(1.0);
+        (-2.0 * ((this->data() - this->sigma_ref()).col(pos) / norm + 0.5).abs() + 1.5).max(0.0).min(1.0);
 
     // calc z values
     this->z_values().setZero();
     for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
     for (mpFlow::dtype::index node = 0; node < 3; ++node) {
         this->z_values()(this->elements()(element, node)) -=
-            this->data()(element, pos) * this->element_area()(element) /
-                (this->node_area()(this->elements()(element, node)) * norm);
+            (this->data()(element, pos) - this->sigma_ref()) * this->element_area()(element) /
+            (this->node_area()(this->elements()(element, node)) * norm);
     }
 
     // copy z values to opengl vertex buffer
@@ -226,8 +228,8 @@ void Image::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void Image::wheelEvent(QWheelEvent* event) {
-    this->threashold() += event->delta() > 0 ? 0.05 :
-            this->threashold() >= 0.05 ? -0.05 : 0.0;
+    this->threashold() += event->delta() > 0 ? 0.01 :
+            this->threashold() >= 0.01 ? -0.01 : -this->threashold();
 
     if (!this->draw_timer().isActive()) {
         this->update_gl_buffer();

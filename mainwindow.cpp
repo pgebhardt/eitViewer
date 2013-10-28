@@ -69,18 +69,18 @@ void MainWindow::initTable() {
             return this->calibrator()->solve_time() * 1e3;
         });
     }
-    this->addAnalysis("normalization threashold:", "dB", [=](const Eigen::Ref<Eigen::ArrayXf>&) {
-        return this->ui->image->threashold();
+    this->addAnalysis("normalization threashold:", "%", [=](const Eigen::Ref<Eigen::ArrayXf>&) {
+        return this->ui->image->threashold() * 100.0;
     });
-    this->addAnalysis("min:", "dB", [=](const Eigen::Ref<Eigen::ArrayXf>& values) {
-        return values.minCoeff();
+    this->addAnalysis("min:", "mS", [=](const Eigen::Ref<Eigen::ArrayXf>& values) {
+        return values.minCoeff() * 1e3;
     });
-    this->addAnalysis("max:", "dB", [=](const Eigen::Ref<Eigen::ArrayXf>& values) {
-        return values.maxCoeff();
+    this->addAnalysis("max:", "mS", [=](const Eigen::Ref<Eigen::ArrayXf>& values) {
+        return values.maxCoeff() * 1e3;
     });
-    this->addAnalysis("rms:", "dB", [=](const Eigen::Ref<Eigen::ArrayXf>& values) -> mpFlow::dtype::real {
-        return std::sqrt((values.square() * this->ui->image->element_area()).sum() /
-            this->ui->image->element_area().sum());
+    this->addAnalysis("mean value:", "mS", [=](const Eigen::Ref<Eigen::ArrayXf>& values) -> mpFlow::dtype::real {
+        return (values * this->ui->image->element_area()).sum() /
+            this->ui->image->element_area().sum() * 1e3;
     });
 }
 
@@ -284,8 +284,7 @@ void MainWindow::solver_initialized(bool success) {
         this->ui->image->init(this->solver()->eit_solver()->forward_solver()->model(),
             this->solver()->eit_solver()->dgamma()->rows(),
             this->solver()->eit_solver()->dgamma()->columns());
-        qRegisterMetaType<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>(
-            "std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>");
+        qRegisterMetaType<Eigen::ArrayXXf>("Eigen::ArrayXXf");
         connect(this->solver(), &Solver::data_ready, this->ui->image, &Image::update_data);
 
         // set correct matrix for measurement system with meta object method call

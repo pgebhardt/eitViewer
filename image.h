@@ -18,8 +18,7 @@ public:
 
 public slots:
     void reset_view();
-    void update_data(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data,
-        double time_elapsed);
+    void update_data(Eigen::ArrayXXf data, double time_elapsed);
     void update_gl_buffer();
 
 protected:
@@ -47,6 +46,7 @@ public:
     QTimer& draw_timer() { return *this->draw_timer_; }
     double& image_pos() { return this->image_pos_; }
     double& image_increment() { return this->image_increment_; }
+    mpFlow::dtype::real& sigma_ref() { return this->sigma_ref_; }
 
 private:
     Eigen::ArrayXXf data_;
@@ -64,6 +64,7 @@ private:
     QTimer* draw_timer_;
     double image_pos_;
     double image_increment_;
+    mpFlow::dtype::real sigma_ref_;
 };
 
 #endif // IMAGE_H
