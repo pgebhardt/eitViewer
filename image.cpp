@@ -34,37 +34,26 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
     this->node_area() = Eigen::ArrayXf::Zero(model->mesh()->nodes()->rows());
 
     // calc node and element area
-    for (mpFlow::dtype::index element = 0; element < model->mesh()->elements()->rows(); ++element) {
-        auto points = model->mesh()->elementNodes(element);
-
+    Eigen::ArrayXXf nodes = mpFlow::numeric::matrix::toEigen<mpFlow::dtype::real>(model->mesh()->nodes());
+    for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element) {
         this->element_area()(element) = 0.5 * std::abs(
-            (std::get<0>(std::get<1>(points[1])) - std::get<0>(std::get<1>(points[0]))) *
-            (std::get<1>(std::get<1>(points[2])) - std::get<1>(std::get<1>(points[0]))) -
-            (std::get<0>(std::get<1>(points[2])) - std::get<0>(std::get<1>(points[0]))) *
-            (std::get<1>(std::get<1>(points[1])) - std::get<1>(std::get<1>(points[0])))
-            );
+            (nodes(this->elements()(element, 1), 0) - nodes(this->elements()(element, 0), 0)) *
+            (nodes(this->elements()(element, 2), 1) - nodes(this->elements()(element, 0), 1)) -
+            (nodes(this->elements()(element, 2), 0) - nodes(this->elements()(element, 0), 0)) *
+            (nodes(this->elements()(element, 1), 1) - nodes(this->elements()(element, 0), 1)));
 
         for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-            this->node_area()(std::get<0>(points[node])) += 0.5 * std::abs(
-                (std::get<0>(std::get<1>(points[1])) - std::get<0>(std::get<1>(points[0]))) *
-                (std::get<1>(std::get<1>(points[2])) - std::get<1>(std::get<1>(points[0]))) -
-                (std::get<0>(std::get<1>(points[2])) - std::get<0>(std::get<1>(points[0]))) *
-                (std::get<1>(std::get<1>(points[1])) - std::get<1>(std::get<1>(points[0])))
-                );
+            this->node_area()(this->elements()(element, node)) += this->element_area()(element);
         }
     }
 
     // fill vertex buffer
-    for (mpFlow::dtype::index element = 0; element < model->mesh()->elements()->rows(); ++element) {
-        // get element nodes
-        auto nodes = model->mesh()->elementNodes(element);
-
-        for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-            this->vertices()(node * 3 + 0, element) =
-                std::get<0>(std::get<1>(nodes[node])) / model->mesh()->radius();
-            this->vertices()(node * 3 + 1, element) =
-                std::get<1>(std::get<1>(nodes[node])) / model->mesh()->radius();
-        }
+    for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
+    for (mpFlow::dtype::index node = 0; node < 3; ++node) {
+        this->vertices()(node * 3 + 0, element) =
+            nodes(this->elements()(element, node), 0) / model->mesh()->radius();
+        this->vertices()(node * 3 + 1, element) =
+            nodes(this->elements()(element, node), 1) / model->mesh()->radius();
     }
 
     // fill electrodes buffer
