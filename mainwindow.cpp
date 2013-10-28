@@ -55,42 +55,37 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::initTable() {
-    this->addAnalysis("system fps:", "", [=](const Eigen::Ref<Eigen::ArrayXXf>&) {
+    this->addAnalysis("system fps:", "", [=](const Eigen::Ref<Eigen::ArrayXf>&) {
         return 1e3 / (20.0 / this->ui->image->image_increment());
     });
-    this->addAnalysis("latency:", "ms", [=](const Eigen::Ref<Eigen::ArrayXXf>&) {
+    this->addAnalysis("latency:", "ms", [=](const Eigen::Ref<Eigen::ArrayXf>&) {
         return 20.0 / this->ui->image->image_increment() * this->solver()->eit_solver()->measurement().size() + this->solver()->solve_time() * 1e3;
     });
-    this->addAnalysis("solve time:", "ms", [=](const Eigen::Ref<Eigen::ArrayXXf>&) {
+    this->addAnalysis("solve time:", "ms", [=](const Eigen::Ref<Eigen::ArrayXf>&) {
         return this->solver()->solve_time() * 1e3;
     });
     if (this->hasMultiGPU()) {
-        this->addAnalysis("calibrate time:", "ms", [=](const Eigen::Ref<Eigen::ArrayXXf>&) {
+        this->addAnalysis("calibrate time:", "ms", [=](const Eigen::Ref<Eigen::ArrayXf>&) {
             return this->calibrator()->solve_time() * 1e3;
         });
     }
-    this->addAnalysis("normalization threashold:", "dB", [=](const Eigen::Ref<Eigen::ArrayXXf>&) {
+    this->addAnalysis("normalization threashold:", "dB", [=](const Eigen::Ref<Eigen::ArrayXf>&) {
         return this->ui->image->threashold();
     });
-    this->addAnalysis("min:", "dB", [=](const Eigen::Ref<Eigen::ArrayXXf>& values) {
-        return values.col(this->ui->image->image_pos()).minCoeff();
+    this->addAnalysis("min:", "dB", [=](const Eigen::Ref<Eigen::ArrayXf>& values) {
+        return values.minCoeff();
     });
-    this->addAnalysis("max:", "dB", [=](const Eigen::Ref<Eigen::ArrayXXf>& values) {
-        return values.col(this->ui->image->image_pos()).maxCoeff();
+    this->addAnalysis("max:", "dB", [=](const Eigen::Ref<Eigen::ArrayXf>& values) {
+        return values.maxCoeff();
     });
-    this->addAnalysis("rms:", "dB", [=](const Eigen::Ref<Eigen::ArrayXXf>& values) {
-        mpFlow::dtype::real rms = 0.0;
-        mpFlow::dtype::real area = 0.0;
-        for (mpFlow::dtype::index i = 0; i < values.rows(); ++i) {
-            rms += mpFlow::math::square(values(i, this->ui->image->image_pos())) * this->ui->image->element_area()[i];
-            area += this->ui->image->element_area()[i];
-        }
-        return std::sqrt(rms / area);
+    this->addAnalysis("rms:", "dB", [=](const Eigen::Ref<Eigen::ArrayXf>& values) -> mpFlow::dtype::real {
+        return std::sqrt((values.square() * this->ui->image->element_area()).sum() /
+            this->ui->image->element_area().sum());
     });
 }
 
 void MainWindow::addAnalysis(QString name, QString unit,
-    std::function<mpFlow::dtype::real(const Eigen::Ref<Eigen::ArrayXXf>&)> analysis) {
+    std::function<mpFlow::dtype::real(const Eigen::Ref<Eigen::ArrayXf>&)> analysis) {
     // create new table row and table items
     this->ui->analysis_table->insertRow(this->ui->analysis_table->rowCount());
     this->ui->analysis_table->setItem(this->ui->analysis_table->rowCount() - 1, 0,
@@ -107,7 +102,8 @@ void MainWindow::analyse() {
     // evaluate analysis functions
     for (const auto& analysis : this->analysis()) {
         this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
-            QString("%1 ").arg(std::get<2>(analysis)(this->ui->image->data())) + std::get<1>(analysis));
+            QString("%1 ").arg(std::get<2>(analysis)(this->ui->image->data()
+                .col(this->ui->image->image_pos()))) + std::get<1>(analysis));
     }
 }
 
@@ -278,8 +274,8 @@ void MainWindow::on_actionSave_DataLogger_triggered() {
 
 void MainWindow::on_actionVersion_triggered() {
     // Show about box with version number
-    QMessageBox::about(this, this->windowTitle(), tr("%1: %2\nmpFlow: %3").arg(
-        this->windowTitle(), GIT_VERSION, mpFlow::version::getVersionString()));
+    QMessageBox::about(this, tr("eitViewer"), tr("%1: %2\nmpFlow: %3").arg(
+        tr("eitViewer"), GIT_VERSION, mpFlow::version::getVersionString()));
 }
 
 void MainWindow::solver_initialized(bool success) {
