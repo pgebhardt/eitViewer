@@ -172,7 +172,10 @@ void Image::initializeGL() {
 
 void Image::resizeGL(int w, int h) {
     glMatrixMode(GL_PROJECTION);
-    glViewport(0, 0, w, h);
+    glViewport(
+        0.5 * w - 0.5 * std::min(w, h),
+        0.5 * h - 0.5 * std::min(w, h),
+        std::min(w, h), std::min(w, h));
     glMatrixMode(GL_MODELVIEW);
 }
 
