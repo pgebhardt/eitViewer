@@ -32,8 +32,7 @@ public:
 
 signals:
     void initialized(bool success);
-    void data_ready(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> image,
-        double time_elapsed);
+    void data_ready(Eigen::ArrayXXf data, double time_elapsed);
 
 public slots:
     void solve(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>* data);

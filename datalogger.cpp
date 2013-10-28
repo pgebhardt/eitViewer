@@ -5,16 +5,11 @@ DataLogger::DataLogger(QObject *parent) :
     QObject(parent) {
 }
 
-void DataLogger::add_data(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data) {
+void DataLogger::add_data(Eigen::ArrayXXf data) {
     if (this->logging()) {
-        // copy data to host
-        data->copyToHost(nullptr);
-        cudaStreamSynchronize(nullptr);
-
         // add current data set to buffer
         this->data().push_back(std::make_tuple(
-            QDateTime::currentMSecsSinceEpoch(),
-            mpFlow::numeric::matrix::toEigen<mpFlow::dtype::real>(data)));
+            QDateTime::currentMSecsSinceEpoch(), data));
     }
 }
 

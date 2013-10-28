@@ -18,7 +18,7 @@ public slots:
     void start_logging() { this->logging() = true; }
     void stop_logging() { this->logging() = false; }
     void reset_log() { this->data().clear(); }
-    void add_data(std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> data);
+    void add_data(Eigen::ArrayXXf data);
 
 public:
     void dump(std::ostream* ostream);
@@ -26,13 +26,11 @@ public:
 public:
     // Accessors
     bool& logging() { return this->logging_; }
-    std::vector<std::tuple<qint64, Eigen::Array<mpFlow::dtype::real,
-        Eigen::Dynamic, Eigen::Dynamic>>>& data() { return this->data_; }
+    std::vector<std::tuple<qint64, Eigen::ArrayXXf>>& data() { return this->data_; }
 
 private:
     bool logging_;
-    std::vector<std::tuple<qint64, Eigen::Array<mpFlow::dtype::real,
-        Eigen::Dynamic, Eigen::Dynamic>>> data_;
+    std::vector<std::tuple<qint64, Eigen::ArrayXXf>> data_;
 };
 
 #endif // DATALOGGER_H

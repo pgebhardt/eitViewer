@@ -165,14 +165,19 @@ void Solver::solve(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::d
         this->eit_solver()->measurement()[i]->copy((*data)[i], this->cuda_stream());
     }
     cudaStreamSynchronize(this->cuda_stream());
-
     this->time().restart();
 
-    this->eit_solver()->solve_differential(this->cublas_handle(), this->cuda_stream());
+    auto solver_result = this->eit_solver()->solve_differential(
+        this->cublas_handle(), this->cuda_stream());
+    solver_result->copyToHost(this->cuda_stream());
 
     cudaStreamSynchronize(this->cuda_stream());
     this->solve_time() = this->time().elapsed();
 
-    emit this->data_ready(this->eit_solver()->dgamma(), this->repeat_time().elapsed());
+    // convert eit solver data to Siemens
+    Eigen::ArrayXXf result = this->eit_solver()->forward_solver()->model()->sigma_ref() *
+        (mpFlow::numeric::matrix::toEigen<mpFlow::dtype::real>(solver_result) * std::log(10.0) / 10.0).exp();
+
+    emit this->data_ready(result, this->repeat_time().elapsed());
     this->repeat_time().restart();
 }
