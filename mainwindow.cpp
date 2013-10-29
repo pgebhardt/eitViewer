@@ -14,6 +14,12 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::MainWindow), measurement_system_(nullptr),
     solver_(nullptr), calibrator_(nullptr), datalogger_(nullptr), open_file_name_("") {
+    // enable multisampling antialiasing for image whole application
+    QGLFormat gl_format;
+    gl_format.setSampleBuffers(true);
+    gl_format.setSamples(16);
+    QGLFormat::setDefaultFormat(gl_format);
+
     ui->setupUi(this);
     this->statusBar()->hide();
 

@@ -164,8 +164,8 @@ void Image::update_gl_buffer() {
 
 void Image::initializeGL() {
     glClearColor(1.0, 1.0, 1.0, 1.0);
+    glEnable(GL_MULTISAMPLE);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_LINE_SMOOTH);
     glLineWidth(3.0);
 }
 
