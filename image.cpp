@@ -114,35 +114,32 @@ void Image::update_data(Eigen::ArrayXXf data, double time_elapsed) {
 }
 
 void Image::update_gl_buffer() {
-    // get current image pos
-    mpFlow::dtype::index pos = (mpFlow::dtype::index)this->image_pos();
-
-    // calc min and max
-    mpFlow::dtype::real min_value = this->data().col(pos).minCoeff() - this->sigma_ref();
-    mpFlow::dtype::real max_value = this->data().col(pos).maxCoeff() - this->sigma_ref();
-
-    // calc norm
-    mpFlow::dtype::real norm = std::max(std::max(-min_value, max_value),
+    // calc norm and prevent division by zero and normalize data
+    mpFlow::dtype::real norm = std::max(std::max(
+        -(this->data().col(this->image_pos()) - this->sigma_ref()).minCoeff(),
+        (this->data().col(this->image_pos()) - this->sigma_ref()).maxCoeff()),
         this->threashold() * this->sigma_ref());
-
-    // check norm to prevent division by zero
     norm = norm == 0.0 ? 1.0 : norm;
+
+    // subtract reference conductivity and normalize current data set
+    auto normalized_data = (this->data().col(this->image_pos())
+        - this->sigma_ref()) / norm;
 
     // calc colors
     this->colors().row(0) = this->colors().row(3) = this->colors().row(6) =
-        (-2.0 * ((this->data() - this->sigma_ref()).col(pos) / norm - 0.5).abs() + 1.5).max(0.0).min(1.0);
+        (-2.0 * (normalized_data - 0.5).abs() + 1.5).max(0.0).min(1.0);
     this->colors().row(1) = this->colors().row(4) = this->colors().row(7) =
-        (-2.0 * ((this->data() - this->sigma_ref()).col(pos) / norm - 0.0).abs() + 1.5).max(0.0).min(1.0);
+        (-2.0 * (normalized_data - 0.0).abs() + 1.5).max(0.0).min(1.0);
     this->colors().row(2) = this->colors().row(5) = this->colors().row(8) =
-        (-2.0 * ((this->data() - this->sigma_ref()).col(pos) / norm + 0.5).abs() + 1.5).max(0.0).min(1.0);
+        (-2.0 * (normalized_data + 0.5).abs() + 1.5).max(0.0).min(1.0);
 
     // calc z values
     this->z_values().setZero();
     for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
     for (mpFlow::dtype::index node = 0; node < 3; ++node) {
         this->z_values()(this->elements()(element, node)) -=
-            (this->data()(element, pos) - this->sigma_ref()) * this->element_area()(element) /
-            (this->node_area()(this->elements()(element, node)) * norm);
+            normalized_data(element) * this->element_area()(element) /
+            this->node_area()(this->elements()(element, node));
     }
 
     // copy z values to opengl vertex buffer
