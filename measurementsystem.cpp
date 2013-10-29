@@ -48,13 +48,11 @@ void MeasurementSystem::readyRead() {
     // extract measurement data
     QDataStream input_stream(datagram);
     input_stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    mpFlow::dtype::real data = 0.0;
     for (mpFlow::dtype::index row = 0; row < this->measurement_buffer()[this->buffer_pos()]->rows(); ++row)
     for (mpFlow::dtype::index column = 0; column < this->measurement_buffer()[this->buffer_pos()]->columns(); ++column) {
-        input_stream >> data;
-        (*this->measurement_buffer()[this->buffer_pos()])(row, column) = data;
+        input_stream >> (*this->measurement_buffer()[this->buffer_pos()])(row, column);
     }
-t
+
     // move to next buffer element and upload current buffer element to gpu
     this->buffer_pos() += 1;
 
