@@ -170,17 +170,14 @@ void Image::initializeGL() {
 }
 
 void Image::resizeGL(int w, int h) {
-    glMatrixMode(GL_PROJECTION);
-    glViewport(
-        0.5 * w - 0.5 * std::min(w, h),
-        0.5 * h - 0.5 * std::min(w, h),
-        std::min(w, h), std::min(w, h));
-    glMatrixMode(GL_MODELVIEW);
+    glViewport(0.5 * w - std::min(w, h), 0.5 * h - std::min(w, h),
+        2.0 * std::min(w, h), 2.0 * std::min(w, h));
 }
 
 void Image::paintGL() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+    glOrtho(-2.0, 2.0, -2.0, 2.0, 2.0, -2.0);
     glRotatef(this->view_angle()[0], 1.0, 0.0, 0.0);
     glRotatef(this->view_angle()[1], 0.0, 0.0, 1.0);
 
