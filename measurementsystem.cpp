@@ -54,7 +54,7 @@ void MeasurementSystem::readyRead() {
         input_stream >> data;
         (*this->measurement_buffer()[this->buffer_pos()])(row, column) = data;
     }
-
+t
     // move to next buffer element and upload current buffer element to gpu
     this->buffer_pos() += 1;
 
