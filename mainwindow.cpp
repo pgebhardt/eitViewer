@@ -88,6 +88,12 @@ void MainWindow::initTable() {
         return (values * this->ui->image->element_area()).sum() /
             this->ui->image->element_area().sum() * 1e3;
     });
+    this->addAnalysis("standard deviation:", "mS", [=](const Eigen::Ref<Eigen::ArrayXf>& values) -> mpFlow::dtype::real {
+        mpFlow::dtype::real mean = (values * this->ui->image->element_area()).sum() /
+            this->ui->image->element_area().sum();
+        return std::sqrt(((values - mean).square() * this->ui->image->element_area()).sum() /
+            this->ui->image->element_area().sum()) * 1e3;
+    });
 }
 
 void MainWindow::addAnalysis(QString name, QString unit,
@@ -333,6 +339,7 @@ void MainWindow::update_solver_menu_items(bool success) {
     this->ui->actionCalibrate->setEnabled(success);
     this->ui->actionSave_Image->setEnabled(success);
     this->ui->actionReset_View->setEnabled(success);
+    this->ui->actionDraw_Wireframe->setEnabled(success);
     this->ui->actionRun_DataLogger->setEnabled(success);
     this->ui->actionReset_DataLogger->setEnabled(success);
     this->ui->actionSave_DataLogger->setEnabled(success);

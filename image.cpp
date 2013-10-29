@@ -4,7 +4,7 @@
 
 Image::Image(QWidget* parent) :
     QGLWidget(parent), threashold_(0.1), image_pos_(0.0), image_increment_(0.0),
-    sigma_ref_(0.0) {
+    sigma_ref_(0.0), draw_wireframe_(false) {
     // create timer
     this->draw_timer_ = new QTimer(this);
     connect(this->draw_timer_, &QTimer::timeout, this, &Image::update_gl_buffer);
@@ -121,23 +121,23 @@ void Image::update_gl_buffer() {
         this->threashold() * this->sigma_ref());
     norm = norm == 0.0 ? 1.0 : norm;
 
-    // subtract reference conductivity and normalize current data set
-    auto normalized_data = (this->data().col(this->image_pos())
-        - this->sigma_ref()) / norm;
+    // subtract reference conductivity and normalize current data set to a range between 0.0 and 1.0
+    auto normalized_data = 0.5 * (this->data().col(this->image_pos())
+        - this->sigma_ref()) / norm + 0.5;
 
     // calc colors
     this->colors().row(0) = this->colors().row(3) = this->colors().row(6) =
-        (-2.0 * (normalized_data - 0.5).abs() + 1.5).max(0.0).min(1.0);
+        (-4.0 * (normalized_data - 0.75).abs() + 1.5).max(0.0).min(1.0);
     this->colors().row(1) = this->colors().row(4) = this->colors().row(7) =
-        (-2.0 * (normalized_data - 0.0).abs() + 1.5).max(0.0).min(1.0);
+        (-4.0 * (normalized_data - 0.5).abs() + 1.5).max(0.0).min(1.0);
     this->colors().row(2) = this->colors().row(5) = this->colors().row(8) =
-        (-2.0 * (normalized_data + 0.5).abs() + 1.5).max(0.0).min(1.0);
+        (-4.0 * (normalized_data - 0.25).abs() + 1.5).max(0.0).min(1.0);
 
     // calc z values
     this->z_values().setZero();
     for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
     for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-        this->z_values()(this->elements()(element, node)) -=
+        this->z_values()(this->elements()(element, node)) +=
             normalized_data(element) * this->element_area()(element) /
             this->node_area()(this->elements()(element, node));
     }
@@ -145,8 +145,8 @@ void Image::update_gl_buffer() {
     // copy z values to opengl vertex buffer
     for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
     for (mpFlow::dtype::index node = 0; node < 3; ++node) {
-        this->vertices()(node * 3 + 2, element) =
-            this->z_values()(this->elements()(element, node));
+        this->vertices()(node * 3 + 2, element) = -(2.0 *
+            this->z_values()(this->elements()(element, node)) - 1.0);
     }
 
     // update image pos
@@ -162,11 +162,18 @@ void Image::update_gl_buffer() {
     this->updateGL();
 }
 
+void Image::set_draw_wireframe(bool draw_wireframe) {
+    this->draw_wireframe_ = draw_wireframe;
+    this->updateGL();
+}
+
 void Image::initializeGL() {
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_DEPTH_TEST);
-    glLineWidth(3.0);
+    glDepthFunc(GL_LEQUAL);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
 }
 
 void Image::resizeGL(int w, int h) {
@@ -175,32 +182,40 @@ void Image::resizeGL(int w, int h) {
 }
 
 void Image::paintGL() {
+    // clear
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // rotate projection according to view angle
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(-2.0, 2.0, -2.0, 2.0, 2.0, -2.0);
     glRotatef(this->view_angle()[0], 1.0, 0.0, 0.0);
     glRotatef(this->view_angle()[1], 0.0, 0.0, 1.0);
 
-    // clear
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // activate and specify pointer to vertex array
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-
     // draw mesh
     glVertexPointer(3, GL_FLOAT, 0, this->vertices().data());
     glColorPointer(3, GL_FLOAT, 0, this->colors().data());
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(1.0, 1.0);
     glDrawArrays(GL_TRIANGLES, 0, this->vertices().cols() * 3);
+    glDisable(GL_POLYGON_OFFSET_FILL);
+
+    // draw wireframes
+    if (this->draw_wireframe()) {
+        glColor3f(0.0, 0.0, 0.0);
+        glLineWidth(1.5);
+        glDisableClientState(GL_COLOR_ARRAY);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glDrawArrays(GL_TRIANGLES, 0, this->vertices().cols() * 3);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glEnableClientState(GL_COLOR_ARRAY);
+    }
 
     // draw electrodes
+    glLineWidth(3.0);
     glVertexPointer(2, GL_FLOAT, 0, this->electrodes().data());
     glColorPointer(3, GL_FLOAT, 0, this->electrode_colors().data());
     glDrawArrays(GL_LINES, 0, this->electrodes().cols() * 2);
-
-    // dactivate vertex arrays after drawing
-    glDisableClientState(GL_COLOR_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void Image::mousePressEvent(QMouseEvent* event) {

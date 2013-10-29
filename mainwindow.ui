@@ -116,6 +116,7 @@
     <addaction name="actionAnalysis_Table"/>
     <addaction name="actionSave_Image"/>
     <addaction name="actionReset_View"/>
+    <addaction name="actionDraw_Wireframe"/>
    </widget>
    <widget class="QMenu" name="menuFile">
     <property name="title">
@@ -336,6 +337,17 @@
     <string>Close Solver</string>
    </property>
   </action>
+  <action name="actionDraw_Wireframe">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Draw Wireframe</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -347,6 +359,7 @@
    <slots>
     <slot>reset_view()</slot>
     <slot>close_solver()</slot>
+    <slot>set_draw_wireframe(bool)</slot>
    </slots>
   </customwidget>
  </customwidgets>
@@ -397,6 +410,22 @@
     <hint type="destinationlabel">
      <x>526</x>
      <y>419</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionDraw_Wireframe</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>image</receiver>
+   <slot>set_draw_wireframe(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>419</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>398</x>
+     <y>421</y>
     </hint>
    </hints>
   </connection>
