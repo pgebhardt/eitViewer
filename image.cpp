@@ -84,21 +84,24 @@ void Image::cleanup() {
     // stop timer
     this->draw_timer().stop();
 
-    // reset view
-    this->reset_view();
-
     // reset image buffer pos and increment
     this->image_pos() = 0.0;
     this->image_increment() = 0.0;
 
-    // redraw
-    this->updateGL();
+    // clear vertex buffer
+    this->vertices() = Eigen::ArrayXXf();
+    this->electrodes() = Eigen::ArrayXXf();
+
+    // reset view
+    this->reset_view();
 }
 
 void Image::reset_view() {
     this->view_angle()[0] = 0.0;
     this->view_angle()[1] = 0.0;
     this->threashold() = 0.05;
+
+    this->updateGL();
 }
 
 void Image::update_data(Eigen::ArrayXXf data, double time_elapsed) {

@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent) :
     gl_format.setSamples(16);
     QGLFormat::setDefaultFormat(gl_format);
 
+    // setup ui
     ui->setupUi(this);
     this->statusBar()->hide();
 
