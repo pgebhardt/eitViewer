@@ -21,6 +21,7 @@ public slots:
     void update_data(Eigen::ArrayXXf data, double time_elapsed);
     void update_gl_buffer();
     void set_draw_wireframe(bool draw_wireframe);
+    void set_interpolate_colors(bool interpolate_colors);
 
 protected:
     virtual void initializeGL();
@@ -35,6 +36,7 @@ public:
     Eigen::ArrayXXf& data() { return this->data_; }
     Eigen::ArrayXXf& vertices() { return this->vertices_; }
     Eigen::ArrayXXf& colors() { return this->colors_; }
+    Eigen::ArrayXXf& interpolated_colors() { return this->interpolated_colors_; }
     Eigen::ArrayXXf& electrodes() { return this->electrodes_; }
     Eigen::ArrayXXf& electrode_colors() { return this->electrode_colors_; }
     Eigen::Array<mpFlow::dtype::index, Eigen::Dynamic, Eigen::Dynamic>& elements() { return this->elements_; }
@@ -49,11 +51,13 @@ public:
     double& image_increment() { return this->image_increment_; }
     mpFlow::dtype::real& sigma_ref() { return this->sigma_ref_; }
     bool draw_wireframe() { return this->draw_wireframe_; }
+    bool interpolate_colors() { return this->interpolate_colors_; }
 
 private:
     Eigen::ArrayXXf data_;
     Eigen::ArrayXXf vertices_;
     Eigen::ArrayXXf colors_;
+    Eigen::ArrayXXf interpolated_colors_;
     Eigen::ArrayXXf electrodes_;
     Eigen::ArrayXXf electrode_colors_;
     Eigen::Array<mpFlow::dtype::index, Eigen::Dynamic, Eigen::Dynamic> elements_;
@@ -68,6 +72,7 @@ private:
     double image_increment_;
     mpFlow::dtype::real sigma_ref_;
     bool draw_wireframe_;
+    bool interpolate_colors_;
 };
 
 #endif // IMAGE_H

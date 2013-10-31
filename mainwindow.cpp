@@ -341,6 +341,7 @@ void MainWindow::update_solver_menu_items(bool success) {
     this->ui->actionSave_Image->setEnabled(success);
     this->ui->actionReset_View->setEnabled(success);
     this->ui->actionDraw_Wireframe->setEnabled(success);
+    this->ui->actionInterpolate_Colors->setEnabled(success);
     this->ui->actionRun_DataLogger->setEnabled(success);
     this->ui->actionReset_DataLogger->setEnabled(success);
     this->ui->actionSave_DataLogger->setEnabled(success);

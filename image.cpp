@@ -26,6 +26,7 @@ void Image::init(std::shared_ptr<mpFlow::EIT::model::Base> model,
     this->data() = Eigen::ArrayXXf::Ones(rows, columns) * model->sigma_ref();
     this->vertices() = Eigen::ArrayXXf::Zero(3 * 3, model->mesh()->elements()->rows());
     this->colors() = Eigen::ArrayXXf::Zero(3 * 3, model->mesh()->elements()->rows());
+    this->interpolated_colors() = Eigen::ArrayXXf::Zero(model->mesh()->nodes()->rows(), 3);
     this->electrodes() = Eigen::ArrayXXf::Zero(2 * 2, model->electrodes()->count());
     this->electrode_colors() = Eigen::ArrayXXf::Zero(3 * 2, model->electrodes()->count());
     this->elements() = mpFlow::numeric::matrix::toEigen<mpFlow::dtype::index>(
@@ -127,15 +128,6 @@ void Image::update_gl_buffer() {
     // subtract reference conductivity and normalize current data set to a range between 0.0 and 1.0
     auto normalized_data = 0.5 * (this->data().col(this->image_pos())
         - this->sigma_ref()) / norm + 0.5;
-
-    // calc colors
-    this->colors().row(0) = this->colors().row(3) = this->colors().row(6) =
-        (-4.0 * (normalized_data - 0.75).abs() + 1.5).max(0.0).min(1.0);
-    this->colors().row(1) = this->colors().row(4) = this->colors().row(7) =
-        (-4.0 * (normalized_data - 0.5).abs() + 1.5).max(0.0).min(1.0);
-    this->colors().row(2) = this->colors().row(5) = this->colors().row(8) =
-        (-4.0 * (normalized_data - 0.25).abs() + 1.5).max(0.0).min(1.0);
-
     // calc z values
     this->z_values().setZero();
     for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
@@ -150,6 +142,32 @@ void Image::update_gl_buffer() {
     for (mpFlow::dtype::index node = 0; node < 3; ++node) {
         this->vertices()(node * 3 + 2, element) = -(2.0 *
             this->z_values()(this->elements()(element, node)) - 1.0);
+    }
+
+    // calc colors
+    if (this->interpolate_colors()) {
+        this->interpolated_colors().col(0) =
+            (-4.0 * (this->z_values() - 0.75).abs() + 1.5).max(0.0).min(1.0);
+        this->interpolated_colors().col(1) =
+            (-4.0 * (this->z_values() - 0.5).abs() + 1.5).max(0.0).min(1.0);
+        this->interpolated_colors().col(2) = (-4.0 * (this->z_values() - 0.25).abs() + 1.5).max(0.0).min(1.0);
+
+        for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
+        for (mpFlow::dtype::index node = 0; node < 3; ++node) {
+            this->colors()(node * 3 + 0, element) =
+                this->interpolated_colors()(this->elements()(element, node), 0);
+            this->colors()(node * 3 + 1, element) =
+                this->interpolated_colors()(this->elements()(element, node), 1);
+            this->colors()(node * 3 + 2, element) =
+                this->interpolated_colors()(this->elements()(element, node), 2);
+        }
+    } else {
+        this->colors().row(0) = this->colors().row(3) = this->colors().row(6) =
+            (-4.0 * (normalized_data - 0.75).abs() + 1.5).max(0.0).min(1.0);
+        this->colors().row(1) = this->colors().row(4) = this->colors().row(7) =
+            (-4.0 * (normalized_data - 0.5).abs() + 1.5).max(0.0).min(1.0);
+        this->colors().row(2) = this->colors().row(5) = this->colors().row(8) =
+            (-4.0 * (normalized_data - 0.25).abs() + 1.5).max(0.0).min(1.0);
     }
 
     // update image pos
@@ -167,6 +185,12 @@ void Image::update_gl_buffer() {
 
 void Image::set_draw_wireframe(bool draw_wireframe) {
     this->draw_wireframe_ = draw_wireframe;
+    this->updateGL();
+}
+
+void Image::set_interpolate_colors(bool interpolate_colors) {
+    this->interpolate_colors_ = interpolate_colors;
+    this->update_gl_buffer();
     this->updateGL();
 }
 
