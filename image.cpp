@@ -100,7 +100,7 @@ void Image::cleanup() {
 void Image::reset_view() {
     this->view_angle()[0] = 0.0;
     this->view_angle()[1] = 0.0;
-    this->threashold() = 0.05;
+    this->threashold() = 0.02;
 
     this->updateGL();
 }
