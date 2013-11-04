@@ -118,7 +118,7 @@ void Image::update_data(Eigen::ArrayXXf data, double time_elapsed) {
 }
 
 void Image::update_gl_buffer() {
-    // calc norm and prevent division by zero and normalize data
+    // calc norm and prevent division by zero
     mpFlow::dtype::real norm = std::max(std::max(
         -(this->data().col(this->image_pos()) - this->sigma_ref()).minCoeff(),
         (this->data().col(this->image_pos()) - this->sigma_ref()).maxCoeff()),
@@ -128,6 +128,7 @@ void Image::update_gl_buffer() {
     // subtract reference conductivity and normalize current data set to a range between 0.0 and 1.0
     auto normalized_data = 0.5 * (this->data().col(this->image_pos())
         - this->sigma_ref()) / norm + 0.5;
+
     // calc z values
     this->z_values().setZero();
     for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
@@ -150,7 +151,8 @@ void Image::update_gl_buffer() {
             (-4.0 * (this->z_values() - 0.75).abs() + 1.5).max(0.0).min(1.0);
         this->interpolated_colors().col(1) =
             (-4.0 * (this->z_values() - 0.5).abs() + 1.5).max(0.0).min(1.0);
-        this->interpolated_colors().col(2) = (-4.0 * (this->z_values() - 0.25).abs() + 1.5).max(0.0).min(1.0);
+        this->interpolated_colors().col(2) =
+            (-4.0 * (this->z_values() - 0.25).abs() + 1.5).max(0.0).min(1.0);
 
         for (mpFlow::dtype::index element = 0; element < this->elements().rows(); ++element)
         for (mpFlow::dtype::index node = 0; node < 3; ++node) {
