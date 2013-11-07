@@ -225,10 +225,11 @@ void MainWindow::on_actionCalibrate_triggered() {
 
 void MainWindow::on_actionAuto_Calibrate_toggled(bool arg1) {
     if (arg1) {
-        QMetaObject::invokeMethod(this->calibrator(), "start",
-            Qt::AutoConnection, Q_ARG(int, this->calibrator()->step_size()));
+        connect(this->measurement_system(), &MeasurementSystem::data_ready,
+            this->calibrator(), &Calibrator::update_data);
     } else {
-        QMetaObject::invokeMethod(this->calibrator(), "stop");
+        disconnect(this->measurement_system(), &MeasurementSystem::data_ready,
+            this->calibrator(), &Calibrator::update_data);
     }
 }
 
@@ -368,6 +369,7 @@ void MainWindow::close_solver() {
         this->update_calibrator_menu_items(false);
 
         // cleanup calibrator
+        disconnect(this->measurement_system(), &MeasurementSystem::data_ready, this->calibrator(), &Calibrator::update_data);
         this->calibrator()->thread()->quit();
         this->calibrator()->thread()->wait();
         delete this->calibrator();

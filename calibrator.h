@@ -2,7 +2,6 @@
 #define CALIBRATOR_H
 
 #include "solver.h"
-#include "firfilter.h"
 #include <QTimer>
 
 class Calibrator : public Solver {
@@ -13,31 +12,31 @@ public:
         std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
         std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
         int cuda_device=0, QObject* parent=nullptr);
-    virtual ~Calibrator();
 
 public slots:
-    void init_filter(int order, int step_size);
+    void update_data(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>* data,
+        double time_elapsed);
     void solve();
-    void start(int step_size);
-    void stop();
 
 public:
     // accessor
-    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> image() {
-        return this->eit_solver()->gamma();
-    }
     Solver* differential_solver() { return this->differential_solver_; }
-    FIRFilter* filter() { return this->filter_; }
-    QTimer* timer() { return this->timer_; }
-    bool running() { return this->timer()->isActive(); }
+    QTimer& timer() { return *this->timer_; }
+    std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>& data() {
+        return this->data_;
+    }
     int& step_size() { return this->step_size_; }
+    double& buffer_pos() { return this->buffer_pos_; }
+    double& buffer_increment() { return this->buffer_increment_; }
 
 private:
     // member
     Solver* differential_solver_;
-    FIRFilter* filter_;
     QTimer* timer_;
+    std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>> data_;
     int step_size_;
+    double buffer_pos_;
+    double buffer_increment_;
 };
 
 #endif // CALIBRATOR_H

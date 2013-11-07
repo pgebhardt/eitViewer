@@ -19,7 +19,6 @@ SOURCES += main.cpp\
     measurementsystem.cpp \
     solver.cpp \
     calibrator.cpp \
-    firfilter.cpp \
     calibratordialog.cpp \
     datalogger.cpp \
     highprecisiontime.cpp
@@ -29,7 +28,6 @@ HEADERS  += mainwindow.h \
     measurementsystem.h \
     solver.h \
     calibrator.h \
-    firfilter.h \
     calibratordialog.h \
     datalogger.h \
     highprecisiontime.h
