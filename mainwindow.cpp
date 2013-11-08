@@ -79,6 +79,9 @@ void MainWindow::initTable() {
     this->addAnalysis("normalization threashold:", "%", [=](const Eigen::Ref<Eigen::ArrayXf>&) {
         return this->ui->image->threashold() * 100.0;
     });
+    this->addAnalysis("mesh elements:", "", [=](const Eigen::Ref<Eigen::ArrayXf>&) {
+        return this->solver()->eit_solver()->forward_solver()->model()->mesh()->elements()->rows();
+    });
     this->addAnalysis("min:", "mS", [=](const Eigen::Ref<Eigen::ArrayXf>& values) {
         return values.minCoeff() * 1e3;
     });
