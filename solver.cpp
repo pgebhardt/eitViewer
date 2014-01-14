@@ -65,11 +65,11 @@ std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::Conjugate>>
     // create source
     std::shared_ptr<mpFlow::EIT::source::Source> source = nullptr;
     if (basis_function_type == "quadratic") {
-        source = std::make_shared<mpFlow::EIT::source::Current<mpFlow::EIT::basis::Quadratic>>(
+        source = std::make_shared<mpFlow::EIT::source::Current<mpFlow::FEM::basis::Quadratic>>(
             current, mesh, electrodes, config["model"].toObject()["components_count"].toDouble(),
             drive_pattern, measurement_pattern, handle, stream);
     } else {
-        source = std::make_shared<mpFlow::EIT::source::Current<mpFlow::EIT::basis::Linear>>(
+        source = std::make_shared<mpFlow::EIT::source::Current<mpFlow::FEM::basis::Linear>>(
             current, mesh, electrodes, config["model"].toObject()["components_count"].toDouble(),
             drive_pattern, measurement_pattern, handle, stream);
     }
@@ -77,11 +77,11 @@ std::shared_ptr<mpFlow::EIT::solver::Solver<mpFlow::numeric::Conjugate>>
     // create model
     std::shared_ptr<mpFlow::EIT::model::Base> model = nullptr;
     if (basis_function_type == "quadratic") {
-        model = std::make_shared<mpFlow::EIT::Model<mpFlow::EIT::basis::Quadratic>>(
+        model = std::make_shared<mpFlow::EIT::Model<mpFlow::FEM::basis::Quadratic>>(
             mesh, electrodes, source, config["model"].toObject()["sigma_ref"].toDouble(),
             config["model"].toObject()["components_count"].toDouble(), handle, stream);
     } else {
-        model = std::make_shared<mpFlow::EIT::Model<mpFlow::EIT::basis::Linear>>(
+        model = std::make_shared<mpFlow::EIT::Model<mpFlow::FEM::basis::Linear>>(
             mesh, electrodes, source, config["model"].toObject()["sigma_ref"].toDouble(),
             config["model"].toObject()["components_count"].toDouble(), handle, stream);
     }
