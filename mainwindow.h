@@ -10,6 +10,7 @@
 #include "solver.h"
 #include "calibrator.h"
 #include "datalogger.h"
+#include "mirrorserver.h"
 
 namespace Ui {
 class MainWindow;
@@ -53,6 +54,7 @@ public:
     Solver* solver() { return this->solver_; }
     Calibrator* calibrator() { return this->calibrator_; }
     DataLogger* datalogger() { return this->datalogger_; }
+    MirrorServer* mirrorserver() { return this->_mirrorserver; }
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(const Eigen::Ref<Eigen::ArrayXf>&)>>>&
         analysis() { return this->analysis_; }
@@ -64,6 +66,7 @@ private:
     Solver* solver_;
     Calibrator* calibrator_;
     DataLogger* datalogger_;
+    MirrorServer* _mirrorserver;
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(const Eigen::Ref<Eigen::ArrayXf>&)>>>
         analysis_;

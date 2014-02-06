@@ -304,6 +304,9 @@ void MainWindow::solver_initialized(bool success) {
         qRegisterMetaType<Eigen::ArrayXXf>("Eigen::ArrayXXf");
         connect(this->solver(), &Solver::data_ready, this->ui->image, &Image::update_data);
 
+        // init mirror server
+        this->_mirrorserver = new MirrorServer(this->ui->image, this);
+
         // set correct matrix for measurement system with meta object method call
         // to ensure matrix update not during data read or write
         qRegisterMetaType<mpFlow::dtype::index>("mpFlow::dtype::index");

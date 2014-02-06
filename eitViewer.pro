@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       += core widgets opengl network
+LIBS += -lqhttpserver
 
 # get version number
 REVISION = $$system(git describe --tags --long)
@@ -21,7 +22,8 @@ SOURCES += main.cpp\
     calibrator.cpp \
     calibratordialog.cpp \
     datalogger.cpp \
-    highprecisiontime.cpp
+    highprecisiontime.cpp \
+    mirrorserver.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
@@ -30,7 +32,8 @@ HEADERS  += mainwindow.h \
     calibrator.h \
     calibratordialog.h \
     datalogger.h \
-    highprecisiontime.h
+    highprecisiontime.h \
+    mirrorserver.h
 
 FORMS    += mainwindow.ui \
     calibratordialog.ui
