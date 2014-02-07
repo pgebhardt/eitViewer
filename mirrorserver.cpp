@@ -3,8 +3,8 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 
-MirrorServer::MirrorServer(Image* image, QObject *parent) :
-    _image(image), QObject(parent) {
+MirrorServer::MirrorServer(Image* image, std::vector<std::tuple<QString, QString>>* analysis, QObject* parent) :
+    _image(image), _analysis(analysis), QObject(parent) {
     // create http server
     this->_httpServer = new QHttpServer(this);
     connect(this->httpServer(), &QHttpServer::newRequest, this, &MirrorServer::handleRequest);
@@ -31,6 +31,12 @@ void MirrorServer::handleRequest(QHttpRequest *request, QHttpResponse *response)
     }
     else if (request->path() == "/colors-update") {
         this->handleColorUpdateRequest(response);
+    }
+    else if (request->path() == "/analysis-update") {
+        this->handleAnalysisUpdateRequest(response);
+    }
+    else if (request->path() == "/calibrate") {
+        this->handleCalibrateRequest(response);
     }
 }
 
@@ -91,4 +97,31 @@ void MirrorServer::handleColorUpdateRequest(QHttpResponse* response){
     response->setHeader("Content-Length", QString::number(colorsByteArray.length()));
     response->writeHead(200);
     response->end(colorsByteArray);
+}
+
+void MirrorServer::handleAnalysisUpdateRequest(QHttpResponse *response) {
+    QVariantList list;
+    for (const auto& analysis : this->analysis()) {
+        QVariantMap analysisMap;
+        analysisMap["name"] = std::get<0>(analysis);
+        analysisMap["result"] = std::get<1>(analysis);
+        list.append(analysisMap);
+    }
+
+    QVariantMap map;
+    map["analysis"] = list;
+
+    QJsonObject json = QJsonObject::fromVariantMap(map);
+    QJsonDocument jsonDocument(json);
+    QByteArray body = jsonDocument.toJson();
+
+    response->setHeader("Content-Length", QString::number(body.length()));
+    response->writeHead(200);
+    response->end(body);
+}
+
+void MirrorServer::handleCalibrateRequest(QHttpResponse *response) {
+    Q_UNUSED(response);
+
+    emit this->calibrate();
 }

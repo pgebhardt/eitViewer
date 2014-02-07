@@ -110,16 +110,21 @@ void MainWindow::addAnalysis(QString name, QString unit,
         new QTableWidgetItem(""));
 
     // add function to vector
-    this->analysis().push_back(std::make_tuple(
+    this->analysisFunctions().push_back(std::make_tuple(
         this->ui->analysis_table->rowCount() - 1, unit, analysis));
+    this->analysis().push_back(std::make_tuple(name, tr("")));
 }
 
 void MainWindow::analyse() {
     // evaluate analysis functions
-    for (const auto& analysis : this->analysis()) {
-        this->ui->analysis_table->item(std::get<0>(analysis), 1)->setText(
-            QString("%1 ").arg(std::get<2>(analysis)(this->ui->image->data()
-                .col(this->ui->image->image_pos()))) + std::get<1>(analysis));
+    for (const auto& analysisFunction : this->analysisFunctions()) {
+        this->analysis()[std::get<0>(analysisFunction)] = std::make_tuple(
+            std::get<0>(this->analysis()[std::get<0>(analysisFunction)]),
+            QString("%1 ").arg(std::get<2>(analysisFunction)(this->ui->image->data()
+                .col(this->ui->image->image_pos()))) + std::get<1>(analysisFunction));
+        this->ui->analysis_table->item(std::get<0>(analysisFunction), 1)->setText(
+            QString("%1 ").arg(std::get<2>(analysisFunction)(this->ui->image->data()
+                .col(this->ui->image->image_pos()))) + std::get<1>(analysisFunction));
     }
 }
 
@@ -305,7 +310,8 @@ void MainWindow::solver_initialized(bool success) {
         connect(this->solver(), &Solver::data_ready, this->ui->image, &Image::update_data);
 
         // init mirror server
-        this->_mirrorserver = new MirrorServer(this->ui->image, this);
+        this->_mirrorserver = new MirrorServer(this->ui->image, &this->analysis(), this);
+        connect(this->mirrorserver(), &MirrorServer::calibrate, this, &MainWindow::on_actionCalibrate_triggered);
 
         // set correct matrix for measurement system with meta object method call
         // to ensure matrix update not during data read or write

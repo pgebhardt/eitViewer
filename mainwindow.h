@@ -57,7 +57,8 @@ public:
     MirrorServer* mirrorserver() { return this->_mirrorserver; }
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(const Eigen::Ref<Eigen::ArrayXf>&)>>>&
-        analysis() { return this->analysis_; }
+        analysisFunctions() { return this->analysisFunctions_; }
+    std::vector<std::tuple<QString, QString>>& analysis() { return this->analysis_; }
     QString& open_file_name() { return this->open_file_name_; }
 
 private:
@@ -69,7 +70,8 @@ private:
     MirrorServer* _mirrorserver;
     std::vector<std::tuple<int, QString,
         std::function<mpFlow::dtype::real(const Eigen::Ref<Eigen::ArrayXf>&)>>>
-        analysis_;
+        analysisFunctions_;
+    std::vector<std::tuple<QString, QString>> analysis_;
     QTimer* analysis_timer_;
     QString open_file_name_;
 };
