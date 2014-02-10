@@ -41,13 +41,11 @@ void MirrorServer::handleRequest(QHttpRequest *request, QHttpResponse *response)
 }
 
 void MirrorServer::handleElectrodesConfigRequest(QHttpResponse *response) {
-    QVariantMap map;
-    map["count"] = (int)this->image()->electrodes().cols();
-    map["length"] = 0.1;
-
-    QJsonObject json = QJsonObject::fromVariantMap(map);
-    QJsonDocument jsonDocument(json);
-    QByteArray body = jsonDocument.toJson();
+    QByteArray vertices = QByteArray::fromRawData((const char*)this->image()->electrodes().data(),
+        sizeof(float) * this->image()->electrodes().rows() * this->image()->electrodes().cols());
+    QByteArray colors = QByteArray::fromRawData((const char*)this->image()->electrode_colors().data(),
+        sizeof(float) * this->image()->electrode_colors().rows() * this->image()->electrode_colors().cols());
+    QByteArray body = vertices.append(colors);
 
     response->setHeader("Content-Length", QString::number(body.length()));
     response->writeHead(200);
