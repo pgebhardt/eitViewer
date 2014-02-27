@@ -12,6 +12,7 @@ public:
         std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
         std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
         int cuda_device=0, QObject* parent=nullptr);
+    void stop();
 
 public slots:
     void update_data(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>* data,
@@ -25,6 +26,7 @@ public:
     std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>& data() {
         return this->data_;
     }
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> offset() { return this->offset_; }
     int& step_size() { return this->step_size_; }
     double& buffer_pos() { return this->buffer_pos_; }
     double& buffer_increment() { return this->buffer_increment_; }
@@ -34,6 +36,7 @@ private:
     Solver* differential_solver_;
     QTimer* timer_;
     std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>> data_;
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> offset_;
     int step_size_;
     double buffer_pos_;
     double buffer_increment_;

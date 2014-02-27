@@ -22,6 +22,11 @@ Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
     });
 }
 
+void Calibrator::stop() {
+    this->timer().stop();
+    this->offset_ = nullptr;
+}
+
 void Calibrator::update_data(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>> *data,
     double time_elapsed) {
     this->data() = *data;
@@ -33,21 +38,36 @@ void Calibrator::update_data(std::vector<std::shared_ptr<mpFlow::numeric::Matrix
         0.0;
 
     // start calibrator timer
-    this->timer().start(this->step_size());
+    if (!this->timer().isActive()) {
+        this->timer().start(this->step_size());
+    }
 }
 
 void Calibrator::solve() {
     this->time().restart();
 
-    // copy current data set to solver
-    this->eit_solver()->measurement()[0]->copy(
+    // set offest matrix if not already set
+    if (this->offset() == nullptr) {
+        this->offset_ = std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(
+            this->eit_solver()->measurement()[0]->rows(), this->eit_solver()->measurement()[0]->columns(),
+            this->cuda_stream());
+        this->offset()->copy(this->data()[this->buffer_pos()], this->cuda_stream());
+        this->offset()->scalarMultiply(-1.0, this->cuda_stream());
+        this->offset()->add(this->eit_solver()->forward_solver()->voltage(), this->cuda_stream());
+    }
+
+    // copy current data set to solver and add offset
+    this->eit_solver()->measurement()[0]->copy(this->offset(), this->cuda_stream());
+    this->eit_solver()->measurement()[0]->add(
         this->data()[this->buffer_pos()], this->cuda_stream());
 
     this->eit_solver()->solve_absolute(this->cublas_handle(),
         this->cuda_stream())->copyToHost(this->cuda_stream());
 
     for (mpFlow::dtype::index i = 0; i < this->differential_solver()->eit_solver()->calculation().size(); ++i) {
-        this->differential_solver()->eit_solver()->calculation()[i]->copy(
+        this->differential_solver()->eit_solver()->calculation()[i]->copy(this->offset(), this->cuda_stream());
+        this->differential_solver()->eit_solver()->calculation()[i]->scalarMultiply(-1.0, this->cuda_stream());
+        this->differential_solver()->eit_solver()->calculation()[i]->add(
             this->eit_solver()->forward_solver()->voltage(),
             this->cuda_stream());
     }

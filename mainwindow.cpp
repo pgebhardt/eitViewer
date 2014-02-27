@@ -238,6 +238,7 @@ void MainWindow::on_actionAuto_Calibrate_toggled(bool arg1) {
     } else {
         disconnect(this->measurement_system(), &MeasurementSystem::data_ready,
             this->calibrator(), &Calibrator::update_data);
+        this->calibrator()->stop();
     }
 }
 
