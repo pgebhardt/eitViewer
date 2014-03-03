@@ -23,23 +23,19 @@ public:
     // accessor
     Solver* differential_solver() { return this->differential_solver_; }
     QTimer& timer() { return *this->timer_; }
-    std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>>& data() {
-        return this->data_;
-    }
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> filteredData() { return this->filteredData_; }
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> offset() { return this->offset_; }
     int& step_size() { return this->step_size_; }
-    double& buffer_pos() { return this->buffer_pos_; }
-    double& buffer_increment() { return this->buffer_increment_; }
+    mpFlow::dtype::real& filterConstant() { return this->filterConstant_; }
 
 private:
     // member
     Solver* differential_solver_;
     QTimer* timer_;
-    std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>> data_;
+    std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> filteredData_;
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> offset_;
     int step_size_;
-    double buffer_pos_;
-    double buffer_increment_;
+    mpFlow::dtype::real filterConstant_;
 };
 
 #endif // CALIBRATOR_H

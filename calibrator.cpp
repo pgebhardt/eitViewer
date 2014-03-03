@@ -6,8 +6,8 @@ Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> boundary,
     int cuda_device, QObject *parent)
     : Solver(config, nodes, elements, boundary, 1, cuda_device, parent),
-    differential_solver_(differential_solver), step_size_(20),
-    buffer_pos_(0.0), buffer_increment_(0.0) {
+    differential_solver_(differential_solver), filteredData_(nullptr),
+    offset_(nullptr), step_size_(2000), filterConstant_(10.0) {
     connect(this, &Calibrator::initialized, [=](bool success) {
         if (success) {
             // set regularization factor
@@ -17,7 +17,10 @@ Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
             // create and start timer
             this->timer_ = new QTimer(this);
             connect(&this->timer(), &QTimer::timeout, this, &Calibrator::solve);
-            this->step_size() = (int)config["calibrator"].toObject()["step_size"].toDouble();
+            this->step_size() = (int)(1e3 * config["calibrator"].toObject()["calibration_interval"].toDouble());
+
+            // set filter constant
+            this->filterConstant() = config["calibrator"].toObject()["filter_constant"].toDouble();
         }
     });
 }
@@ -25,17 +28,36 @@ Calibrator::Calibrator(Solver* differential_solver, const QJsonObject& config,
 void Calibrator::stop() {
     this->timer().stop();
     this->offset_ = nullptr;
+    this->filteredData_ = nullptr;
 }
 
 void Calibrator::update_data(std::vector<std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>>> *data,
     double time_elapsed) {
-    this->data() = *data;
+    // create filtered data matrix, if neccessary
+    if (this->filteredData() == nullptr) {
+        this->filteredData_ = std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(
+            (*data)[0]->rows(), (*data)[0]->columns(), this->cuda_stream());
+        this->filteredData()->copy((*data)[0], this->cuda_stream());
+    }
 
-    // update buffer increment
-    this->buffer_pos() = 0.0;
-    this->buffer_increment() = time_elapsed > ((double)this->step_size() * 1e-3) ?
-        ((double)this->step_size() * 1e-3 / time_elapsed * (double)data->size()) :
-        0.0;
+    // perform IIR low pass filter function
+    mpFlow::dtype::real deltaT = time_elapsed / (mpFlow::dtype::real)data->size();
+    mpFlow::dtype::real alpha = deltaT / (this->filterConstant() + deltaT);
+    for (const auto& measurementData : *data) {
+        this->filteredData()->scalarMultiply(1.0 - alpha, this->cuda_stream());
+        cublasSaxpy(this->cublas_handle(), this->filteredData()->data_rows() * this->filteredData()->data_columns(),
+            &alpha, measurementData->device_data(), 1, this->filteredData()->device_data(), 1);
+    }
+
+    // set offest matrix if not already set
+    if (this->offset() == nullptr) {
+        this->offset_ = std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(
+            this->eit_solver()->measurement()[0]->rows(), this->eit_solver()->measurement()[0]->columns(),
+            this->cuda_stream());
+        this->offset()->copy(this->filteredData(), this->cuda_stream());
+        this->offset()->scalarMultiply(-1.0, this->cuda_stream());
+        this->offset()->add(this->eit_solver()->forward_solver()->voltage(), this->cuda_stream());
+    }
 
     // start calibrator timer
     if (!this->timer().isActive()) {
@@ -46,20 +68,9 @@ void Calibrator::update_data(std::vector<std::shared_ptr<mpFlow::numeric::Matrix
 void Calibrator::solve() {
     this->time().restart();
 
-    // set offest matrix if not already set
-    if (this->offset() == nullptr) {
-        this->offset_ = std::make_shared<mpFlow::numeric::Matrix<mpFlow::dtype::real>>(
-            this->eit_solver()->measurement()[0]->rows(), this->eit_solver()->measurement()[0]->columns(),
-            this->cuda_stream());
-        this->offset()->copy(this->data()[this->buffer_pos()], this->cuda_stream());
-        this->offset()->scalarMultiply(-1.0, this->cuda_stream());
-        this->offset()->add(this->eit_solver()->forward_solver()->voltage(), this->cuda_stream());
-    }
-
     // copy current data set to solver and add offset
-    this->eit_solver()->measurement()[0]->copy(this->offset(), this->cuda_stream());
-    this->eit_solver()->measurement()[0]->add(
-        this->data()[this->buffer_pos()], this->cuda_stream());
+    this->eit_solver()->measurement()[0]->copy(this->filteredData(), this->cuda_stream());
+    this->eit_solver()->measurement()[0]->add(this->offset(), this->cuda_stream());
 
     this->eit_solver()->solve_absolute(this->cublas_handle(),
         this->cuda_stream())->copyToHost(this->cuda_stream());
@@ -68,17 +79,7 @@ void Calibrator::solve() {
         this->differential_solver()->eit_solver()->calculation()[i]->copy(this->offset(), this->cuda_stream());
         this->differential_solver()->eit_solver()->calculation()[i]->scalarMultiply(-1.0, this->cuda_stream());
         this->differential_solver()->eit_solver()->calculation()[i]->add(
-            this->eit_solver()->forward_solver()->voltage(),
-            this->cuda_stream());
-    }
-
-    // update buffer pos
-    this->buffer_pos() += this->buffer_increment();
-    if (this->buffer_pos() >= (double)this->data().size()) {
-        this->buffer_pos() = (double)this->data().size() - 1.0;
-
-        // stop timer
-        this->timer().stop();
+            this->eit_solver()->forward_solver()->voltage(), this->cuda_stream());
     }
 
     cudaStreamSynchronize(this->cuda_stream());
