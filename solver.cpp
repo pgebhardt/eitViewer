@@ -17,7 +17,7 @@ std::shared_ptr<mpFlow::numeric::Matrix<type>> matrixFromJsonArray(const QJsonAr
 }
 
 std::shared_ptr<mpFlow::solver::Solver<
-    mpFlow::EIT::ForwardSolver<mpFlow::numeric::SparseConjugate>, mpFlow::numeric::Conjugate>>
+    mpFlow::EIT::ForwardSolver<mpFlow::numeric::ConjugateGradient>, mpFlow::numeric::ConjugateGradient>>
     Solver::createSolverFromConfig(const QJsonObject &config,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> nodes,
     std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
@@ -88,12 +88,12 @@ std::shared_ptr<mpFlow::solver::Solver<
     }
 
     // create forward solver
-    auto forward_solver = std::make_shared<mpFlow::EIT::ForwardSolver<mpFlow::numeric::SparseConjugate>>(
+    auto forward_solver = std::make_shared<mpFlow::EIT::ForwardSolver<mpFlow::numeric::ConjugateGradient>>(
         model, stream);
 
     // create and init solver
     return std::make_shared<mpFlow::solver::Solver<
-        mpFlow::EIT::ForwardSolver<mpFlow::numeric::SparseConjugate>, mpFlow::numeric::Conjugate>>(
+        mpFlow::EIT::ForwardSolver<mpFlow::numeric::ConjugateGradient>, mpFlow::numeric::ConjugateGradient>>(
         forward_solver, parallel_images, config["solver"].toObject()["regularization_factor"].toDouble(),
         handle, stream);
 }

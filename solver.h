@@ -24,8 +24,8 @@ public:
         createMeshFromConfig(const QJsonObject& config, cudaStream_t stream);
 
     static std::shared_ptr<mpFlow::solver::Solver<
-        mpFlow::EIT::ForwardSolver<mpFlow::numeric::SparseConjugate>,
-        mpFlow::numeric::Conjugate>>
+        mpFlow::EIT::ForwardSolver<mpFlow::numeric::ConjugateGradient>,
+        mpFlow::numeric::ConjugateGradient>>
         createSolverFromConfig(const QJsonObject& config,
         std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::real>> nodes,
         std::shared_ptr<mpFlow::numeric::Matrix<mpFlow::dtype::index>> elements,
@@ -42,8 +42,8 @@ public slots:
 public:
     // accessors
     std::shared_ptr<mpFlow::solver::Solver<
-        mpFlow::EIT::ForwardSolver<mpFlow::numeric::SparseConjugate>,
-        mpFlow::numeric::Conjugate>> eit_solver() {
+        mpFlow::EIT::ForwardSolver<mpFlow::numeric::ConjugateGradient>,
+        mpFlow::numeric::ConjugateGradient>> eit_solver() {
         return this->eit_solver_;
     }
     QThread* thread() { return this->thread_; }
@@ -57,8 +57,8 @@ public:
 private:
     // member
     std::shared_ptr<mpFlow::solver::Solver<
-        mpFlow::EIT::ForwardSolver<mpFlow::numeric::SparseConjugate>,
-        mpFlow::numeric::Conjugate>> eit_solver_;
+        mpFlow::EIT::ForwardSolver<mpFlow::numeric::ConjugateGradient>,
+        mpFlow::numeric::ConjugateGradient>> eit_solver_;
     QThread* thread_;
     HighPrecisionTime time_;
     HighPrecisionTime repeat_time_;
