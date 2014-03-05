@@ -4,7 +4,7 @@
 
 Image::Image(QWidget* parent) :
     QGLWidget(parent), threashold_(0.1), image_pos_(0.0), image_increment_(0.0),
-    sigma_ref_(0.0), draw_wireframe_(false) {
+    sigma_ref_(0.0), draw_wireframe_(false), interpolated_colors_(false) {
     // create timer
     this->draw_timer_ = new QTimer(this);
     connect(this->draw_timer_, &QTimer::timeout, this, &Image::update_gl_buffer);
