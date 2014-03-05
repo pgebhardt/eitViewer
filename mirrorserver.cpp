@@ -4,7 +4,7 @@
 #include <QJsonDocument>
 
 MirrorServer::MirrorServer(Image* image, std::vector<std::tuple<QString, QString>>* analysis, QObject* parent) :
-    _image(image), _analysis(analysis), QObject(parent) {
+    QObject(parent), _image(image), _analysis(analysis) {
     // create http server
     this->_httpServer = new QHttpServer(this);
     connect(this->httpServer(), &QHttpServer::newRequest, this, &MirrorServer::handleRequest);
